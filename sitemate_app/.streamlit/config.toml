@@ -3,22 +3,24 @@
 [theme]
 # The base mode is dark (like AutoCAD or VS Code)
 base = "dark"
-
-# Primary Color: Safety Orange (Used for buttons and active inputs)
+# Primary Color: Safety Orange
 primaryColor = "#FF8C00"
-
-# Background: Deep Asphalt Grey (Less strain on eyes)
+# Background: Deep Asphalt Grey
 backgroundColor = "#0E1117"
-
-# Secondary Background: Concrete Grey (For sidebars and cards)
+# Secondary Background: Concrete Grey
 secondaryBackgroundColor = "#262730"
-
-# Text: Off-white for readability
+# Text: Off-white
 textColor = "#FAFAFA"
-
-# Font: Clean sans-serif for technical data
+# Font: Clean sans-serif
 font = "sans serif"
 
 [server]
-# Run without opening a browser window automatically (good for deployment)
+# Run without opening a browser window
 headless = true
+# Disable security checks to allow the Microphone Component to load
+enableCORS = false
+enableXsrfProtection = false
+
+[browser]
+# Don't send usage stats
+gatherUsageStats = false

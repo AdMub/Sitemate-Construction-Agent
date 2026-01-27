@@ -3,23 +3,21 @@ import pandas as pd
 import altair as alt
 import time
 
-# --- NEW IMPORTS FOR VOICE (STABLE VERSION) ---
+# --- 1. IMPORTS ---
 from streamlit_mic_recorder import mic_recorder
 from logic.transcriber import transcribe_audio
-
-# --- IMPORT CUSTOM LOGIC ---
 from logic.oyenuga_logic import get_agent_response
 from logic.data_fetcher import get_live_price 
 
-# 1. PAGE CONFIG
+# 2. PAGE CONFIG
 st.set_page_config(page_title="SiteMate Pro", page_icon="🏗️", layout="wide")
 try:
     with open('assets/style.css') as f:
         st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
 except:
-    pass # Handle case if css is missing
+    pass 
 
-# 2. SIDEBAR
+# 3. SIDEBAR
 with st.sidebar:
     st.image("https://cdn-icons-png.flaticon.com/512/2666/2666505.png", width=60)
     st.title("SiteMate Pro")
@@ -34,19 +32,15 @@ with st.sidebar:
     # LIVE BUDGET METRIC
     if 'total_actual' in st.session_state:
         val = st.session_state['total_actual']
-        label = "Live Project Budget"
-        if val > 1000000: # If over 1 million, it's a full project
-            label = "Total Project Estimate"
-            
-        st.metric(label=label, value=f"₦ {val:,.0f}", delta="Synced with Chat")
+        st.metric(label="Live Project Budget", value=f"₦ {val:,.0f}", delta="Synced with Chat")
     else:
         st.metric(label="Live Project Budget", value="--")
 
-# 3. MAIN WORKSPACE
+# 4. MAIN WORKSPACE
 st.title("🏗️ Engineering Command Center")
 tab1, tab2, tab3 = st.tabs(["💬 Engineering Chat", "📊 Cost Dashboard", "🛒 Procurement (PO)"])
 
-# --- TAB 1: CHAT (The Source) ---
+# --- TAB 1: CHAT ---
 with tab1:
     if "messages" not in st.session_state: st.session_state.messages = []
     
@@ -54,76 +48,75 @@ with tab1:
     for message in st.session_state.messages:
         with st.chat_message(message["role"]): st.markdown(message["content"])
 
-    # B. VOICE INPUT SECTION (UPDATED & STABLE)
-    st.markdown("---") 
-    st.caption("🎙️ **Site Voice Command** (Record your request)")
-    v_col1, v_col2 = st.columns([1, 4])
+    # B. FLOATING INPUT AREA
+    # We create a container to hold Voice + Text controls cleanly
+    with st.container():
+        # Layout: Microphone on the left, Status text on the right
+        c1, c2 = st.columns([1, 6])
+        
+        with c1:
+            # Minimalist Mic Button
+            audio_data = mic_recorder(
+                start_prompt="🎤 Record",
+                stop_prompt="⏹️ Stop", 
+                key="recorder",
+                use_container_width=True
+            )
+            
+        with c2:
+            # Placeholder to show we are listening
+            if audio_data and audio_data['bytes']:
+                 st.caption("✅ Audio captured. Processing...")
+            else:
+                 st.caption("Click 'Record' to speak, or type below.")
 
-    with v_col1:
-        # NEW RECORDER COMPONENT
-        # This is the stable version that works without FFmpeg
-        audio_data = mic_recorder(
-            start_prompt="Click to Record",
-            stop_prompt="Stop Recording", 
-            key="recorder"
-        )
-
-    with v_col2:
-        # Logic: Check if we have bytes from the recorder
+        # Logic: Process Voice
         if audio_data and audio_data['bytes']:
-            with st.spinner("🎧 Transcribing your voice..."):
-                # 1. Convert Audio to Text using Groq
-                voice_text = transcribe_audio(audio_data['bytes'])
+            # Prevent re-processing the same audio twice
+            if "last_audio_id" not in st.session_state or st.session_state.last_audio_id != audio_data['id']:
+                st.session_state.last_audio_id = audio_data['id']
                 
-                # 2. Display what was heard
-                st.info(f"🗣️ **You said:** '{voice_text}'")
-                
-                # 3. Add to Chat History (So it persists)
-                st.session_state.messages.append({"role": "user", "content": f"🎤 *Voice Command:* {voice_text}"})
-                
-                # 4. Pass text to Agent Logic (Using 'soil_type' from sidebar)
-                ai_response, boq_data = get_agent_response(voice_text, location, soil_type)
-                
-                # 5. Display Response
-                st.markdown(ai_response)
-                st.session_state.messages.append({"role": "assistant", "content": ai_response})
-                
-                # 6. Update Dashboard Data (Same logic as Text Input)
-                if boq_data:
-                    st.session_state['active_boq'] = boq_data
-                    st.toast("✅ Bill of Quantities Updated!", icon="📊")
+                with st.spinner("🧠 SiteMate is thinking..."):
+                    voice_text = transcribe_audio(audio_data['bytes'])
+                    
+                    if voice_text and "Error" not in voice_text:
+                        # Add User Voice to Chat
+                        st.session_state.messages.append({"role": "user", "content": f"🎤 *Voice:* {voice_text}"})
+                        
+                        # Get AI Response (Now checks for "Cancel"!)
+                        ai_resp, boq = get_agent_response(voice_text, location, soil_type)
+                        
+                        st.markdown(ai_resp)
+                        st.session_state.messages.append({"role": "assistant", "content": ai_resp})
+                        
+                        if boq:
+                            st.session_state['active_boq'] = boq
+                            st.toast("✅ Project Budget Updated!", icon="💰")
+                            time.sleep(1)
+                            st.rerun()
 
-    # C. TEXT INPUT SECTION
-    if prompt := st.chat_input("Type your engineering query..."):
+    # C. STANDARD TEXT INPUT
+    if prompt := st.chat_input("Type your engineering request..."):
         st.session_state.messages.append({"role": "user", "content": prompt})
         with st.chat_message("user"): st.markdown(prompt)
 
         with st.chat_message("assistant"):
-            with st.spinner("Analyzing structural requirements..."):
+            with st.spinner("Analyzing..."):
+                resp_text, boq_data = get_agent_response(prompt, location, soil_type)
+                st.markdown(resp_text)
                 
-                # GET RESPONSE + DATA
-                response_text, boq_data = get_agent_response(prompt, location, soil_type)
-                
-                st.markdown(response_text)
-                
-                # --- THE HANDOVER PROTOCOL ---
                 if boq_data:
                     st.session_state['active_boq'] = boq_data
-                    st.success("✅ Bill of Quantities sent to **Cost Dashboard**.")
-                else:
-                    if 'active_boq' in st.session_state:
-                        del st.session_state['active_boq']
+                    st.success("✅ Dashboard Updated")
 
-        st.session_state.messages.append({"role": "assistant", "content": response_text})
+        st.session_state.messages.append({"role": "assistant", "content": resp_text})
 
-# --- TAB 2: DASHBOARD (The Calculator) ---
+# --- TAB 2: DASHBOARD ---
 with tab2:
     col_header, col_btn = st.columns([4,1])
     with col_header:
-        # Dynamic Header
         if 'active_boq' in st.session_state:
             st.subheader(f"📊 Project Bill of Quantities ({location})")
-            st.caption("Quantities derived from Engineering Chat • Prices from Algolia")
         else:
             st.subheader(f"📉 Market Unit Rates ({location})")
 
@@ -131,9 +124,8 @@ with tab2:
         refresh = st.button("🔄 Update Costs", type="primary")
 
     if refresh or 'active_boq' in st.session_state:
-        # Determine which items to track
         if 'active_boq' in st.session_state:
-            target_items = st.session_state['active_boq'] # Dict from AI
+            target_items = st.session_state['active_boq']
         else:
             target_items = {
                 "Cement": 1, "Sharp Sand": 1, "Granite": 1, 
@@ -145,59 +137,40 @@ with tab2:
         
         for item_name, quantity in target_items.items():
             if quantity > 0:
-                # Fetch Unit Price
                 unit_price, full_name = get_live_price(item_name, location)
-                
-                # Calculate Line Total
                 line_total = unit_price * quantity
-                
                 if unit_price == 0: full_name = f"⚠️ {item_name} (Not in DB)"
                 
                 live_data.append({
-                    "Item": item_name,
-                    "Description": full_name,
-                    "Qty": quantity,
-                    "Unit Price": unit_price,
-                    "Total Cost": line_total
+                    "Item": item_name, "Description": full_name, "Qty": quantity,
+                    "Unit Price": unit_price, "Total Cost": line_total
                 })
                 total_act += line_total
 
-        # Save results
         df = pd.DataFrame(live_data)
         st.session_state['boq_df'] = df
         st.session_state['total_actual'] = total_act
 
-    # Display Logic
     if 'boq_df' in st.session_state:
         df = st.session_state['boq_df']
-        
-        # Big Metrics
         c1, c2 = st.columns(2)
         c1.metric("Total Project Cost", f"₦{df['Total Cost'].sum():,.0f}")
         c2.metric("Logistics Zone", location)
 
-        # Bar Chart
         chart = alt.Chart(df).mark_bar().encode(
-            x='Item',
-            y='Total Cost',
-            color=alt.value("#FF8C00"),
-            tooltip=['Item', 'Qty', 'Total Cost']
+            x='Item', y='Total Cost', color=alt.value("#FF8C00"), tooltip=['Item', 'Qty', 'Total Cost']
         ).properties(height=300)
         st.altair_chart(chart, use_container_width=True)
-        
-        # Detailed Table
         st.dataframe(df, use_container_width=True, hide_index=True)
     else:
         st.info("Start a chat in **Tab 1** (Type or Voice) to generate a Bill of Quantities.")
 
-# --- TAB 3: PROCUREMENT (The Output) ---
+# --- TAB 3: PROCUREMENT ---
 with tab3:
     st.subheader("🛒 Procurement Orders")
     
     if 'boq_df' in st.session_state:
         df = st.session_state['boq_df']
-        
-        # Only show valid items
         valid_orders = df[df['Total Cost'] > 0]
         
         st.markdown(f"**Project Location:** {location}")

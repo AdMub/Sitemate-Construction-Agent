@@ -4,22 +4,23 @@ import os
 
 def transcribe_audio(audio_bytes):
     """
-    Sends recorded audio to Groq's Distil-Whisper model for text transcription.
+    Sends recorded audio to Groq's Whisper model for text transcription.
+    Updated to use the stable 'whisper-large-v3' model.
     """
     try:
         # 1. Initialize Groq Client
         client = Groq(api_key=st.secrets["GROQ_API_KEY"])
         
-        # 2. Save bytes to a temporary file (Groq API needs a file-like object)
+        # 2. Save bytes to a temporary file
         temp_filename = "temp_voice_input.wav"
         with open(temp_filename, "wb") as f:
             f.write(audio_bytes)
             
-        # 3. Send to Groq Whisper
+        # 3. Send to Groq Whisper (UPDATED MODEL)
         with open(temp_filename, "rb") as file:
             transcription = client.audio.transcriptions.create(
               file=(temp_filename, file.read()),
-              model="distil-whisper-large-v3-en", # Super fast model
+              model="whisper-large-v3", # <--- FIXED MODEL NAME
               response_format="json",
               language="en",
               temperature=0.0
@@ -31,4 +32,4 @@ def transcribe_audio(audio_bytes):
         return transcription.text
         
     except Exception as e:
-        return f"Error Transcribing: {e}"
+        return f"Error: {e}"
