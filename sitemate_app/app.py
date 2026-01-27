@@ -3,14 +3,21 @@ import pandas as pd
 import altair as alt
 import time
 
+# --- NEW IMPORTS FOR VOICE (STABLE VERSION) ---
+from streamlit_mic_recorder import mic_recorder
+from logic.transcriber import transcribe_audio
+
 # --- IMPORT CUSTOM LOGIC ---
 from logic.oyenuga_logic import get_agent_response
 from logic.data_fetcher import get_live_price 
 
 # 1. PAGE CONFIG
 st.set_page_config(page_title="SiteMate Pro", page_icon="🏗️", layout="wide")
-with open('assets/style.css') as f:
-    st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
+try:
+    with open('assets/style.css') as f:
+        st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
+except:
+    pass # Handle case if css is missing
 
 # 2. SIDEBAR
 with st.sidebar:
@@ -28,7 +35,7 @@ with st.sidebar:
     if 'total_actual' in st.session_state:
         val = st.session_state['total_actual']
         label = "Live Project Budget"
-        if val > 1000000: # If over 1 million, it's a full project, not just unit prices
+        if val > 1000000: # If over 1 million, it's a full project
             label = "Total Project Estimate"
             
         st.metric(label=label, value=f"₦ {val:,.0f}", delta="Synced with Chat")
@@ -43,10 +50,51 @@ tab1, tab2, tab3 = st.tabs(["💬 Engineering Chat", "📊 Cost Dashboard", "�
 with tab1:
     if "messages" not in st.session_state: st.session_state.messages = []
     
+    # A. Display Chat History
     for message in st.session_state.messages:
         with st.chat_message(message["role"]): st.markdown(message["content"])
 
-    if prompt := st.chat_input("Ask SiteMate..."):
+    # B. VOICE INPUT SECTION (UPDATED & STABLE)
+    st.markdown("---") 
+    st.caption("🎙️ **Site Voice Command** (Record your request)")
+    v_col1, v_col2 = st.columns([1, 4])
+
+    with v_col1:
+        # NEW RECORDER COMPONENT
+        # This is the stable version that works without FFmpeg
+        audio_data = mic_recorder(
+            start_prompt="Click to Record",
+            stop_prompt="Stop Recording", 
+            key="recorder"
+        )
+
+    with v_col2:
+        # Logic: Check if we have bytes from the recorder
+        if audio_data and audio_data['bytes']:
+            with st.spinner("🎧 Transcribing your voice..."):
+                # 1. Convert Audio to Text using Groq
+                voice_text = transcribe_audio(audio_data['bytes'])
+                
+                # 2. Display what was heard
+                st.info(f"🗣️ **You said:** '{voice_text}'")
+                
+                # 3. Add to Chat History (So it persists)
+                st.session_state.messages.append({"role": "user", "content": f"🎤 *Voice Command:* {voice_text}"})
+                
+                # 4. Pass text to Agent Logic (Using 'soil_type' from sidebar)
+                ai_response, boq_data = get_agent_response(voice_text, location, soil_type)
+                
+                # 5. Display Response
+                st.markdown(ai_response)
+                st.session_state.messages.append({"role": "assistant", "content": ai_response})
+                
+                # 6. Update Dashboard Data (Same logic as Text Input)
+                if boq_data:
+                    st.session_state['active_boq'] = boq_data
+                    st.toast("✅ Bill of Quantities Updated!", icon="📊")
+
+    # C. TEXT INPUT SECTION
+    if prompt := st.chat_input("Type your engineering query..."):
         st.session_state.messages.append({"role": "user", "content": prompt})
         with st.chat_message("user"): st.markdown(prompt)
 
@@ -59,12 +107,10 @@ with tab1:
                 st.markdown(response_text)
                 
                 # --- THE HANDOVER PROTOCOL ---
-                # If Chat generated a BOQ, send it to Session State for Tab 2 & 3
                 if boq_data:
                     st.session_state['active_boq'] = boq_data
                     st.success("✅ Bill of Quantities sent to **Cost Dashboard**.")
                 else:
-                    # If no specific project, clear previous BOQ to show unit prices
                     if 'active_boq' in st.session_state:
                         del st.session_state['active_boq']
 
@@ -86,9 +132,8 @@ with tab2:
 
     if refresh or 'active_boq' in st.session_state:
         # Determine which items to track
-        # If BOQ exists from chat, use that. Otherwise use default list.
         if 'active_boq' in st.session_state:
-            target_items = st.session_state['active_boq'] # Dict: {'Cement': 335, ...}
+            target_items = st.session_state['active_boq'] # Dict from AI
         else:
             target_items = {
                 "Cement": 1, "Sharp Sand": 1, "Granite": 1, 
@@ -143,7 +188,7 @@ with tab2:
         # Detailed Table
         st.dataframe(df, use_container_width=True, hide_index=True)
     else:
-        st.info("Start a chat in **Tab 1** to generate a Bill of Quantities, or click Refresh to see Unit Prices.")
+        st.info("Start a chat in **Tab 1** (Type or Voice) to generate a Bill of Quantities.")
 
 # --- TAB 3: PROCUREMENT (The Output) ---
 with tab3:
