@@ -1,0 +1,45 @@
+/* assets/style.css */
+
+/* FORCE DARK MODE BACKGROUND */
+.stApp {
+    background-color: #0E1117;
+}
+
+/* SIDEBAR STYLING - Engineering Look */
+section[data-testid="stSidebar"] {
+    background-color: #1c1e26;
+    border-right: 1px solid #FF8C00; /* Orange border line */
+}
+
+/* DASHBOARD METRICS - Make numbers BIG and ORANGE */
+div[data-testid="stMetricValue"] {
+    font-size: 28px !important;
+    color: #FF8C00 !important;
+    font-weight: 700;
+}
+
+/* RUGGED BUTTONS - Rectangular, bold, industrial */
+div.stButton > button {
+    background-color: #FF8C00;
+    color: #000000;
+    border-radius: 4px; /* Slight curve, mostly square */
+    border: none;
+    font-weight: bold;
+    text-transform: uppercase; /* All caps text */
+    letter-spacing: 1px;
+    width: 100%; /* Full width buttons */
+}
+
+/* Button Hover Effect */
+div.stButton > button:hover {
+    background-color: #FFFFFF;
+    color: #FF8C00;
+    border: 2px solid #FF8C00;
+}
+
+/* CHAT BUBBLES - Distinct background for readability */
+.stChatMessage {
+    background-color: #262730;
+    border-radius: 10px;
+    border: 1px solid #444;
+}

@@ -1,0 +1,24 @@
+# .streamlit/config.toml
+
+[theme]
+# The base mode is dark (like AutoCAD or VS Code)
+base = "dark"
+
+# Primary Color: Safety Orange (Used for buttons and active inputs)
+primaryColor = "#FF8C00"
+
+# Background: Deep Asphalt Grey (Less strain on eyes)
+backgroundColor = "#0E1117"
+
+# Secondary Background: Concrete Grey (For sidebars and cards)
+secondaryBackgroundColor = "#262730"
+
+# Text: Off-white for readability
+textColor = "#FAFAFA"
+
+# Font: Clean sans-serif for technical data
+font = "sans serif"
+
+[server]
+# Run without opening a browser window automatically (good for deployment)
+headless = true

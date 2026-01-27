@@ -1,0 +1,467 @@
+[
+  {
+    "objectID": "Cem_31050",
+    "name": "Cement - Dangote 3X 42.5R (50kg)",
+    "category": "Cement",
+    "price": 10307,
+    "unit": "Bag",
+    "supplier": "Titanium Steel Depot",
+    "location": "Ring Road, Ibadan",
+    "_geoloc": {
+      "lat": 7.3585,
+      "lng": 3.8596
+    },
+    "image_url": "https://placehold.co/600x400/808080/FFFFFF/png?text=CEMENT+(Water+Retaining)",
+    "description": "Portland limestone cement."
+  },
+  {
+    "objectID": "Cem_12464",
+    "name": "Cement - Elephant Supaset (50kg)",
+    "category": "Cement",
+    "price": 9990,
+    "unit": "Bag",
+    "supplier": "AdMub Sands (Iwo Road)",
+    "location": "Iwo Road, Ibadan",
+    "_geoloc": {
+      "lat": 7.4019,
+      "lng": 3.9173
+    },
+    "image_url": "https://placehold.co/600x400/808080/FFFFFF/png?text=CEMENT+(Water+Retaining)",
+    "description": "Portland limestone cement."
+  },
+  {
+    "objectID": "Cem_65093",
+    "name": "Cement - Lafarge 42.5N (50kg)",
+    "category": "Cement",
+    "price": 9538,
+    "unit": "Bag",
+    "supplier": "Oyo Concrete Works",
+    "location": "Challenge, Ibadan",
+    "_geoloc": {
+      "lat": 7.3468,
+      "lng": 3.8789
+    },
+    "image_url": "https://placehold.co/600x400/808080/FFFFFF/png?text=CEMENT+(Water+Retaining)",
+    "description": "Portland limestone cement."
+  },
+  {
+    "objectID": "Agg_71327",
+    "name": "Sharp Sand (20 tons)",
+    "category": "Aggregates",
+    "price": 125554,
+    "unit": "Truck",
+    "supplier": "Oyo Concrete Works",
+    "location": "Challenge, Ibadan",
+    "_geoloc": {
+      "lat": 7.3468,
+      "lng": 3.8789
+    },
+    "image_url": "https://placehold.co/600x400/eda00b/FFFFFF/png?text=SHARP+SAND+(20T)",
+    "description": "River sharp sand for concreting."
+  },
+  {
+    "objectID": "Agg_33385",
+    "name": "Granite 3/4 inch (30 tons)",
+    "category": "Aggregates",
+    "price": 601664,
+    "unit": "Truck",
+    "supplier": "Oyo Concrete Works",
+    "location": "Challenge, Ibadan",
+    "_geoloc": {
+      "lat": 7.3468,
+      "lng": 3.8789
+    },
+    "image_url": "https://placehold.co/600x400/4a4a4a/FFFFFF/png?text=GRANITE+(3/4+inch)",
+    "description": "Clean granite stone."
+  },
+  {
+    "objectID": "Agg_40665",
+    "name": "Plaster Sand (20 tons)",
+    "category": "Aggregates",
+    "price": 101969,
+    "unit": "Truck",
+    "supplier": "AdMub Sands (Iwo Road)",
+    "location": "Iwo Road, Ibadan",
+    "_geoloc": {
+      "lat": 7.4019,
+      "lng": 3.9173
+    },
+    "image_url": "https://placehold.co/600x400/eda00b/FFFFFF/png?text=SHARP+SAND+(20T)",
+    "description": "Soft sand for plastering."
+  },
+  {
+    "objectID": "Blo_99916",
+    "name": "9-inch Vibrated Block",
+    "category": "Blocks",
+    "price": 650,
+    "unit": "Block",
+    "supplier": "Titanium Steel Depot",
+    "location": "Ring Road, Ibadan",
+    "_geoloc": {
+      "lat": 7.3585,
+      "lng": 3.8596
+    },
+    "image_url": "https://placehold.co/600x400/8b4513/FFFFFF/png?text=BLOCKS+(Vibrated)",
+    "description": "Load bearing hollow block."
+  },
+  {
+    "objectID": "Blo_54950",
+    "name": "6-inch Vibrated Block",
+    "category": "Blocks",
+    "price": 500,
+    "unit": "Block",
+    "supplier": "Bodija Builders Mart",
+    "location": "Bodija, Ibadan",
+    "_geoloc": {
+      "lat": 7.4228,
+      "lng": 3.896
+    },
+    "image_url": "https://placehold.co/600x400/8b4513/FFFFFF/png?text=BLOCKS+(Vibrated)",
+    "description": "Partition wall block."
+  },
+  {
+    "objectID": "Ste_20413",
+    "name": "8mm Iron Rod (TMT)",
+    "category": "Steel",
+    "price": 9300,
+    "unit": "Length (12m)",
+    "supplier": "AdMub Sands (Iwo Road)",
+    "location": "Iwo Road, Ibadan",
+    "_geoloc": {
+      "lat": 7.4019,
+      "lng": 3.9173
+    },
+    "image_url": "https://placehold.co/600x400/2c3e50/FFFFFF/png?text=STEEL+ROD+(TMT)",
+    "description": "High Yield TMT Reinforcement Bar Y8."
+  },
+  {
+    "objectID": "Ste_91828",
+    "name": "10mm Iron Rod (TMT)",
+    "category": "Steel",
+    "price": 10500,
+    "unit": "Length (12m)",
+    "supplier": "AdMub Sands (Iwo Road)",
+    "location": "Iwo Road, Ibadan",
+    "_geoloc": {
+      "lat": 7.4019,
+      "lng": 3.9173
+    },
+    "image_url": "https://placehold.co/600x400/2c3e50/FFFFFF/png?text=STEEL+ROD+(TMT)",
+    "description": "High Yield TMT Reinforcement Bar Y10."
+  },
+  {
+    "objectID": "Ste_15101",
+    "name": "12mm Iron Rod (TMT)",
+    "category": "Steel",
+    "price": 11700,
+    "unit": "Length (12m)",
+    "supplier": "Oyo Concrete Works",
+    "location": "Challenge, Ibadan",
+    "_geoloc": {
+      "lat": 7.3468,
+      "lng": 3.8789
+    },
+    "image_url": "https://placehold.co/600x400/2c3e50/FFFFFF/png?text=STEEL+ROD+(TMT)",
+    "description": "High Yield TMT Reinforcement Bar Y12."
+  },
+  {
+    "objectID": "Ste_49843",
+    "name": "16mm Iron Rod (TMT)",
+    "category": "Steel",
+    "price": 14100,
+    "unit": "Length (12m)",
+    "supplier": "AdMub Sands (Iwo Road)",
+    "location": "Iwo Road, Ibadan",
+    "_geoloc": {
+      "lat": 7.4019,
+      "lng": 3.9173
+    },
+    "image_url": "https://placehold.co/600x400/2c3e50/FFFFFF/png?text=STEEL+ROD+(TMT)",
+    "description": "High Yield TMT Reinforcement Bar Y16."
+  },
+  {
+    "objectID": "Ste_22567",
+    "name": "20mm Iron Rod (TMT)",
+    "category": "Steel",
+    "price": 16500,
+    "unit": "Length (12m)",
+    "supplier": "Oyo Concrete Works",
+    "location": "Challenge, Ibadan",
+    "_geoloc": {
+      "lat": 7.3468,
+      "lng": 3.8789
+    },
+    "image_url": "https://placehold.co/600x400/2c3e50/FFFFFF/png?text=STEEL+ROD+(TMT)",
+    "description": "High Yield TMT Reinforcement Bar Y20."
+  },
+  {
+    "objectID": "Ste_10336",
+    "name": "25mm Iron Rod (TMT)",
+    "category": "Steel",
+    "price": 19500,
+    "unit": "Length (12m)",
+    "supplier": "Oyo Concrete Works",
+    "location": "Challenge, Ibadan",
+    "_geoloc": {
+      "lat": 7.3468,
+      "lng": 3.8789
+    },
+    "image_url": "https://placehold.co/600x400/2c3e50/FFFFFF/png?text=STEEL+ROD+(TMT)",
+    "description": "High Yield TMT Reinforcement Bar Y25."
+  },
+  {
+    "objectID": "Roo_14747",
+    "name": "Stone Coated Tiles (Bond)",
+    "category": "Roofing",
+    "price": 4200,
+    "unit": "sqm",
+    "supplier": "Bodija Builders Mart",
+    "location": "Bodija, Ibadan",
+    "_geoloc": {
+      "lat": 7.4228,
+      "lng": 3.896
+    },
+    "image_url": "https://placehold.co/600x400/c0392b/FFFFFF/png?text=ROOFING+SHEET",
+    "description": "Premium stone coated roofing tile."
+  },
+  {
+    "objectID": "Roo_18314",
+    "name": "Long Span Aluminium (0.55mm)",
+    "category": "Roofing",
+    "price": 3800,
+    "unit": "Meter",
+    "supplier": "Titanium Steel Depot",
+    "location": "Ring Road, Ibadan",
+    "_geoloc": {
+      "lat": 7.3585,
+      "lng": 3.8596
+    },
+    "image_url": "https://placehold.co/600x400/c0392b/FFFFFF/png?text=ROOFING+SHEET",
+    "description": "Standard aluminium roofing sheet."
+  },
+  {
+    "objectID": "Roo_71728",
+    "name": "POP Cement (40kg)",
+    "category": "Roofing",
+    "price": 8500,
+    "unit": "Bag",
+    "supplier": "Bodija Builders Mart",
+    "location": "Bodija, Ibadan",
+    "_geoloc": {
+      "lat": 7.4228,
+      "lng": 3.896
+    },
+    "image_url": "https://placehold.co/600x400/e67e22/FFFFFF/png?text=TILES+/+POP",
+    "description": "Plaster of Paris for ceiling casting."
+  },
+  {
+    "objectID": "Roo_34073",
+    "name": "PVC Ceiling Strip",
+    "category": "Roofing",
+    "price": 1500,
+    "unit": "Bundle",
+    "supplier": "AdMub Sands (Iwo Road)",
+    "location": "Iwo Road, Ibadan",
+    "_geoloc": {
+      "lat": 7.4019,
+      "lng": 3.9173
+    },
+    "image_url": "https://placehold.co/600x400/c0392b/FFFFFF/png?text=ROOFING+SHEET",
+    "description": "PVC Ceiling panels."
+  },
+  {
+    "objectID": "Fin_77368",
+    "name": "Vitrified Floor Tile (60x60)",
+    "category": "Finishing",
+    "price": 4500,
+    "unit": "sqm",
+    "supplier": "Titanium Steel Depot",
+    "location": "Ring Road, Ibadan",
+    "_geoloc": {
+      "lat": 7.3585,
+      "lng": 3.8596
+    },
+    "image_url": "https://placehold.co/600x400/e67e22/FFFFFF/png?text=TILES+/+POP",
+    "description": "Polished vitrified tiles."
+  },
+  {
+    "objectID": "Fin_58608",
+    "name": "Ceramic Wall Tile (30x60)",
+    "category": "Finishing",
+    "price": 3500,
+    "unit": "sqm",
+    "supplier": "Oyo Concrete Works",
+    "location": "Challenge, Ibadan",
+    "_geoloc": {
+      "lat": 7.3468,
+      "lng": 3.8789
+    },
+    "image_url": "https://placehold.co/600x400/e67e22/FFFFFF/png?text=TILES+/+POP",
+    "description": "Glazed wall tiles."
+  },
+  {
+    "objectID": "Fin_18678",
+    "name": "Royal Marble Tile",
+    "category": "Finishing",
+    "price": 15000,
+    "unit": "sqm",
+    "supplier": "Titanium Steel Depot",
+    "location": "Ring Road, Ibadan",
+    "_geoloc": {
+      "lat": 7.3585,
+      "lng": 3.8596
+    },
+    "image_url": "https://placehold.co/600x400/e67e22/FFFFFF/png?text=TILES+/+POP",
+    "description": "High-end marble finish."
+  },
+  {
+    "objectID": "Plu_44669",
+    "name": "4-inch PVC Waste Pipe",
+    "category": "Plumbing",
+    "price": 4500,
+    "unit": "Length (4m)",
+    "supplier": "Titanium Steel Depot",
+    "location": "Ring Road, Ibadan",
+    "_geoloc": {
+      "lat": 7.3585,
+      "lng": 3.8596
+    },
+    "image_url": "https://placehold.co/600x400/3498db/FFFFFF/png?text=PLUMBING+PIPE",
+    "description": "Drainage/Sewage pipe."
+  },
+  {
+    "objectID": "Plu_35474",
+    "name": "20mm PPR Pipe (Supply)",
+    "category": "Plumbing",
+    "price": 3500,
+    "unit": "Length (4m)",
+    "supplier": "Bodija Builders Mart",
+    "location": "Bodija, Ibadan",
+    "_geoloc": {
+      "lat": 7.4228,
+      "lng": 3.896
+    },
+    "image_url": "https://placehold.co/600x400/3498db/FFFFFF/png?text=PLUMBING+PIPE",
+    "description": "Hot/Cold water supply."
+  },
+  {
+    "objectID": "Plu_27007",
+    "name": "3/4 inch CPVC Pipe",
+    "category": "Plumbing",
+    "price": 2800,
+    "unit": "Length",
+    "supplier": "Bodija Builders Mart",
+    "location": "Bodija, Ibadan",
+    "_geoloc": {
+      "lat": 7.4228,
+      "lng": 3.896
+    },
+    "image_url": "https://placehold.co/600x400/3498db/FFFFFF/png?text=PLUMBING+PIPE",
+    "description": "Hot water supply pipe."
+  },
+  {
+    "objectID": "Plu_70253",
+    "name": "PVC Elbow 4-inch",
+    "category": "Plumbing",
+    "price": 500,
+    "unit": "Piece",
+    "supplier": "Oyo Concrete Works",
+    "location": "Challenge, Ibadan",
+    "_geoloc": {
+      "lat": 7.3468,
+      "lng": 3.8789
+    },
+    "image_url": "https://placehold.co/600x400/3498db/FFFFFF/png?text=PLUMBING+PIPE",
+    "description": "Fittings."
+  },
+  {
+    "objectID": "Plu_39610",
+    "name": "Pressure Pump (1.5HP)",
+    "category": "Plumbing",
+    "price": 85000,
+    "unit": "Piece",
+    "supplier": "Oyo Concrete Works",
+    "location": "Challenge, Ibadan",
+    "_geoloc": {
+      "lat": 7.3468,
+      "lng": 3.8789
+    },
+    "image_url": "https://placehold.co/600x400/3498db/FFFFFF/png?text=PLUMBING+PIPE",
+    "description": "Water pump."
+  },
+  {
+    "objectID": "Ele_20996",
+    "name": "2.5mm Single Core Cable",
+    "category": "Electrical",
+    "price": 18500,
+    "unit": "Coil (100m)",
+    "supplier": "Bodija Builders Mart",
+    "location": "Bodija, Ibadan",
+    "_geoloc": {
+      "lat": 7.4228,
+      "lng": 3.896
+    },
+    "image_url": "https://placehold.co/600x400/f1c40f/000000/png?text=ELECTRICAL+CABLE",
+    "description": "Socket circuit wire (Pure Copper)."
+  },
+  {
+    "objectID": "Ele_97022",
+    "name": "1.5mm Single Core Cable",
+    "category": "Electrical",
+    "price": 12500,
+    "unit": "Coil (100m)",
+    "supplier": "Titanium Steel Depot",
+    "location": "Ring Road, Ibadan",
+    "_geoloc": {
+      "lat": 7.3585,
+      "lng": 3.8596
+    },
+    "image_url": "https://placehold.co/600x400/f1c40f/000000/png?text=ELECTRICAL+CABLE",
+    "description": "Lighting circuit wire."
+  },
+  {
+    "objectID": "Ele_59961",
+    "name": "4.0mm Single Core Cable",
+    "category": "Electrical",
+    "price": 29000,
+    "unit": "Coil (100m)",
+    "supplier": "AdMub Sands (Iwo Road)",
+    "location": "Iwo Road, Ibadan",
+    "_geoloc": {
+      "lat": 7.4019,
+      "lng": 3.9173
+    },
+    "image_url": "https://placehold.co/600x400/f1c40f/000000/png?text=ELECTRICAL+CABLE",
+    "description": "A/C circuit wire."
+  },
+  {
+    "objectID": "Ele_93289",
+    "name": "20mm PVC Conduit",
+    "category": "Electrical",
+    "price": 900,
+    "unit": "Length",
+    "supplier": "AdMub Sands (Iwo Road)",
+    "location": "Iwo Road, Ibadan",
+    "_geoloc": {
+      "lat": 7.4019,
+      "lng": 3.9173
+    },
+    "image_url": "https://placehold.co/600x400/f1c40f/000000/png?text=ELECTRICAL+CABLE",
+    "description": "Wiring protection pipe."
+  },
+  {
+    "objectID": "Ele_78529",
+    "name": "13A Double Socket",
+    "category": "Electrical",
+    "price": 2800,
+    "unit": "Piece",
+    "supplier": "Titanium Steel Depot",
+    "location": "Ring Road, Ibadan",
+    "_geoloc": {
+      "lat": 7.3585,
+      "lng": 3.8596
+    },
+    "image_url": "https://placehold.co/600x400/f1c40f/000000/png?text=ELECTRICAL+CABLE",
+    "description": "Wall outlet."
+  }
+]
