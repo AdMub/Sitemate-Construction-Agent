@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import altair as alt
 import time
+import urllib.parse  # Required for WhatsApp Link Generation
 
 # --- 1. IMPORTS ---
 from streamlit_mic_recorder import mic_recorder
@@ -22,15 +23,45 @@ except:
 with st.sidebar:
     st.image("https://cdn-icons-png.flaticon.com/512/2666/2666505.png", width=60)
     st.title("SiteMate Pro")
-    st.caption("v3.1 | Licensed to: **Lekki Projects Ltd**")
+    st.caption("v4.0 | Licensed to: **Lekki Projects Ltd**")
     st.divider()
     
+    # --- FEATURE 5: SMART GEOLOCATION & SOIL MAP ---
     st.subheader("📍 Site Context")
-    location = st.selectbox("Project Location", ["Lekki, Lagos", "Ibadan, Oyo", "Abuja, FCT"])
-    soil_type = st.select_slider("Soil Condition", options=["Firm/Sandy", "Clay", "Swampy"])
+    
+    # Define the mapping logic (Location -> Default Soil)
+    SOIL_DEFAULTS = {
+        "Lekki, Lagos": "Swampy",
+        "Ibadan, Oyo": "Firm/Sandy",
+        "Abuja, FCT": "Firm/Sandy"
+    }
+    
+    # Location Selectbox
+    selected_loc = st.selectbox(
+        "Project Location", 
+        ["Lekki, Lagos", "Ibadan, Oyo", "Abuja, FCT"],
+        key="loc_selector"
+    )
+    
+    # Auto-update logic: If location changes, update soil default
+    if "last_location" not in st.session_state or st.session_state.last_location != selected_loc:
+        st.session_state.last_location = selected_loc
+        st.session_state.soil_default = SOIL_DEFAULTS[selected_loc]
+
+    # Soil Slider (Controlled by session state but editable)
+    soil_type = st.select_slider(
+        "Soil Condition", 
+        options=["Firm/Sandy", "Clay", "Swampy"],
+        value=st.session_state.get("soil_default", "Firm/Sandy")
+    )
+    
+    # Visual Feedback for Automation
+    if soil_type == SOIL_DEFAULTS[selected_loc]:
+        st.caption(f"✨ *Auto-detected soil for {selected_loc.split(',')[0]}*")
+    
     st.divider()
 
-    # --- WHAT-IF SCENARIOS (Feature 4) ---
+    # --- FEATURE 4: WHAT-IF SCENARIOS ---
     with st.expander("⚡ What-If Scenarios", expanded=True):
         st.caption("Adjust parameters to see instant cost impact.")
         
@@ -47,17 +78,17 @@ with st.sidebar:
 
     st.divider()
     
-    # --- PDF EXPORT (FIXED FOR PRICES) ---
-    # Logic: We check for 'boq_df' (The calculated financial table from Tab 2)
+    # --- FEATURE 3: PDF EXPORT (WITH DATAFRAME FIX) ---
+    # We check for 'boq_df' (The calculated financial table)
     if 'boq_df' in st.session_state and not st.session_state['boq_df'].empty:
         st.subheader("📄 Export")
         
         pdf_bytes = generate_pdf_report(
             user_query=st.session_state.get('last_user_query', 'N/A'),
-            location=location,
+            location=selected_loc,
             soil_type=soil_type,
             ai_text=st.session_state.get('last_ai_response', ''),
-            boq_dataframe=st.session_state['boq_df']  # <--- CRITICAL FIX: Sending the priced dataframe
+            boq_dataframe=st.session_state['boq_df']  # <--- CRITICAL: Sending the priced dataframe
         )
         
         st.download_button(
@@ -111,7 +142,8 @@ with tab1:
                     voice_text = transcribe_audio(audio_data['bytes'])
                     if voice_text and "Error" not in voice_text:
                         st.session_state.messages.append({"role": "user", "content": f"🎤 *Voice:* {voice_text}"})
-                        ai_resp, boq = get_agent_response(voice_text, location, soil_type)
+                        # Pass selected_loc instead of hardcoded location
+                        ai_resp, boq = get_agent_response(voice_text, selected_loc, soil_type)
                         
                         st.session_state['last_ai_response'] = ai_resp
                         st.session_state['last_user_query'] = voice_text
@@ -131,7 +163,8 @@ with tab1:
 
         with st.chat_message("assistant"):
             with st.spinner("Analyzing..."):
-                resp_text, boq_data = get_agent_response(prompt, location, soil_type)
+                # Pass selected_loc instead of hardcoded location
+                resp_text, boq_data = get_agent_response(prompt, selected_loc, soil_type)
                 
                 st.session_state['last_ai_response'] = resp_text
                 st.session_state['last_user_query'] = prompt
@@ -143,12 +176,12 @@ with tab1:
 
         st.session_state.messages.append({"role": "assistant", "content": resp_text})
 
-# --- TAB 2: DASHBOARD (INTERACTIVE) ---
+# --- TAB 2: DASHBOARD (WITH WHAT-IF LOGIC) ---
 with tab2:
     col_header, col_btn = st.columns([4,1])
     with col_header:
         if 'active_boq' in st.session_state:
-            st.subheader(f"📊 Project Bill of Quantities ({location})")
+            st.subheader(f"📊 Project Bill of Quantities ({selected_loc})")
             
             # Show active filters
             filters = []
@@ -160,7 +193,7 @@ with tab2:
             else:
                 st.caption("Standard Rates Applied")
         else:
-            st.subheader(f"📉 Market Unit Rates ({location})")
+            st.subheader(f"📉 Market Unit Rates ({selected_loc})")
 
     with col_btn:
         refresh = st.button("🔄 Update Costs", type="primary")
@@ -180,16 +213,17 @@ with tab2:
         
         for item_name, quantity in target_items.items():
             if quantity > 0:
-                unit_price, full_name = get_live_price(item_name, location)
+                # Use selected_loc for pricing
+                unit_price, full_name = get_live_price(item_name, selected_loc)
                 
                 # --- APPLY WHAT-IF LOGIC HERE ---
+                # 1. Steel Variance
                 if "Iron Rod" in item_name or "Steel" in item_name:
-                    # Apply percentage (+/-)
                     unit_price = unit_price * (1 + (steel_var / 100.0))
                 
+                # 2. Concrete Grade
                 calc_qty = quantity
                 if "Cement" in item_name and "M25" in concrete_grade:
-                    # M25 needs ~25% more cement than M20
                     calc_qty = quantity * 1.25
                 # -------------------------------
                 
@@ -205,9 +239,13 @@ with tab2:
                 })
                 total_act += line_total
 
-        # SAVE DATAFRAME TO SESSION STATE
-        # This is crucial: We save the *calculated* results so the PDF generator can see them.
-        df = pd.DataFrame(live_data)
+        # SAVE DATAFRAME TO SESSION STATE (CRITICAL FOR PDF)
+        if not live_data:
+            # Create an empty DataFrame with the correct columns to prevent KeyErrors
+            df = pd.DataFrame(columns=["Item", "Description", "Qty", "Unit Price", "Total Cost"])
+        else:
+            df = pd.DataFrame(live_data)
+            
         st.session_state['boq_df'] = df
         st.session_state['total_actual'] = total_act
 
@@ -215,7 +253,7 @@ with tab2:
         df = st.session_state['boq_df']
         c1, c2 = st.columns(2)
         c1.metric("Total Project Cost", f"₦{df['Total Cost'].sum():,.0f}")
-        c2.metric("Logistics Zone", location)
+        c2.metric("Logistics Zone", selected_loc)
 
         chart = alt.Chart(df).mark_bar().encode(
             x='Item', y='Total Cost', color=alt.value("#FF8C00"), tooltip=['Item', 'Qty', 'Total Cost']
@@ -225,7 +263,7 @@ with tab2:
     else:
         st.info("Start a chat in **Tab 1** (Type or Voice) to generate a Bill of Quantities.")
 
-# --- TAB 3: PROCUREMENT ---
+# --- TAB 3: PROCUREMENT (FEATURE 6: WHATSAPP) ---
 with tab3:
     st.subheader("🛒 Procurement Orders")
     
@@ -233,17 +271,36 @@ with tab3:
         df = st.session_state['boq_df']
         valid_orders = df[df['Total Cost'] > 0]
         
-        st.markdown(f"**Project Location:** {location}")
+        st.markdown(f"**Project Location:** {selected_loc}")
         st.dataframe(valid_orders[['Description', 'Qty', 'Unit Price', 'Total Cost']], use_container_width=True)
         
-        col1, col2 = st.columns(2)
-        with col1:
-             st.info(f"**Total Payable:** ₦{valid_orders['Total Cost'].sum():,.0f}")
-        with col2:
+        # Calculate Grand Total
+        grand_total = valid_orders['Total Cost'].sum()
+        
+        # --- WHATSAPP INTEGRATION ---
+        st.divider()
+        c1, c2, c3 = st.columns([2, 1, 1])
+        
+        with c1:
+             st.info(f"**Total Payable:** ₦{grand_total:,.0f}")
+             
+        with c2:
              if st.button("🚀 Process Purchase Orders"):
-                 with st.spinner("Generating Invoices..."):
-                     time.sleep(2)
+                 with st.spinner("Generating Invoices..."): time.sleep(2)
                  st.success("Orders sent to suppliers!")
                  st.balloons()
+                 
+        with c3:
+            # Generate WhatsApp Link
+            wa_message = f"Hello SiteMate Team,\n\nI want to order materials for the {selected_loc} project.\n\n"
+            for _, row in valid_orders.iterrows():
+                wa_message += f"- {row['Item']}: {row['Qty']} units\n"
+            wa_message += f"\nTotal Estimate: N{grand_total:,.0f}\n\nPlease confirm availability."
+            
+            encoded_msg = urllib.parse.quote(wa_message)
+            wa_link = f"https://wa.me/?text={encoded_msg}"
+            
+            st.link_button("📲 Share on WhatsApp", wa_link, type="primary")
+
     else:
         st.warning("⚠️ No active project found. Please chat with SiteMate to create a BOQ.")
