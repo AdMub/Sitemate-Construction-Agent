@@ -10,16 +10,20 @@ from logic.oyenuga_logic import get_agent_response
 from logic.data_fetcher import get_live_price, get_suppliers_for_location
 from logic.report_generator import generate_pdf_report
 from logic.integrations import get_whatsapp_link, get_email_link, generate_order_message
-from logic.labor_engine import calculate_labor_cost 
-from logic.timeline_engine import calculate_project_timeline # <--- NEW IMPORT
+from logic.labor_engine import calculate_labor_cost
+from logic.timeline_engine import calculate_project_timeline
+from logic.db_manager import init_db, save_project, get_all_projects, load_project_data, delete_project # <--- NEW IMPORT
 
-# 2. PAGE CONFIG
+# 2. PAGE CONFIG & DB INIT
 st.set_page_config(page_title="SiteMate Pro", page_icon="🏗️", layout="wide")
 try:
     with open('assets/style.css') as f:
         st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
 except:
     pass 
+
+# Initialize Database on Load
+init_db()
 
 # 3. SIDEBAR
 with st.sidebar:
@@ -28,12 +32,71 @@ with st.sidebar:
     st.caption("v7.0 | Licensed to: **Lekki Projects Ltd**")
     st.divider()
     
+    # --- FEATURE 3: PROJECT HISTORY (SAVE & LOAD) ---
+    with st.expander("🗂️ My Projects", expanded=True):
+        # A. Save Current
+        save_name = st.text_input("Project Name", placeholder="e.g. Lekki Fence")
+        if st.button("💾 Save Project"):
+            if 'boq_df' in st.session_state and not st.session_state['boq_df'].empty:
+                # Use current session state values
+                loc_to_save = st.session_state.get('last_location', "Lekki, Lagos")
+                soil_to_save = st.session_state.get('soil_default', "Firm/Sandy")
+                
+                success, msg = save_project(save_name, loc_to_save, soil_to_save, st.session_state['boq_df'])
+                if success:
+                    st.success(msg)
+                    time.sleep(1)
+                    st.rerun() # Refresh to show in load list
+                else:
+                    st.error(msg)
+            else:
+                st.warning("No active project data to save.")
+
+        st.divider()
+
+        # B. Load Existing
+        existing_projects = get_all_projects() # Returns [(name, time), ...]
+        if existing_projects:
+            # Create a list of names for the dropdown
+            project_names = [p[0] for p in existing_projects]
+            selected_load = st.selectbox("Select Project", project_names)
+            
+            c1, c2 = st.columns(2)
+            with c1:
+                if st.button("📂 Load"):
+                    loc, soil, df = load_project_data(selected_load)
+                    if df is not None:
+                        # RESTORE SESSION STATE
+                        st.session_state['boq_df'] = df
+                        st.session_state['last_location'] = loc
+                        st.session_state['soil_default'] = soil
+                        st.session_state['active_boq'] = True # Dummy flag
+                        st.success(f"Loaded: {selected_load}")
+                        time.sleep(1)
+                        st.rerun()
+            with c2:
+                if st.button("❌ Delete"):
+                    delete_project(selected_load)
+                    st.warning("Deleted.")
+                    time.sleep(1)
+                    st.rerun()
+        else:
+            st.caption("No saved projects yet.")
+
+    st.divider()
+    
     # --- FEATURE 5: SMART GEOLOCATION ---
     st.subheader("📍 Site Context")
     SOIL_DEFAULTS = {"Lekki, Lagos": "Swampy", "Ibadan, Oyo": "Firm/Sandy", "Abuja, FCT": "Firm/Sandy"}
-    selected_loc = st.selectbox("Project Location", ["Lekki, Lagos", "Ibadan, Oyo", "Abuja, FCT"], key="loc_selector")
     
-    if "last_location" not in st.session_state or st.session_state.last_location != selected_loc:
+    # Use session state for location to allow "Load Project" to override it
+    if "last_location" not in st.session_state:
+        st.session_state.last_location = "Lekki, Lagos"
+        
+    selected_loc = st.selectbox("Project Location", ["Lekki, Lagos", "Ibadan, Oyo", "Abuja, FCT"], index=["Lekki, Lagos", "Ibadan, Oyo", "Abuja, FCT"].index(st.session_state.last_location), key="loc_selector")
+    
+    # Update state if changed manually
+    if selected_loc != st.session_state.last_location:
         st.session_state.last_location = selected_loc
         st.session_state.soil_default = SOIL_DEFAULTS[selected_loc]
 
@@ -42,7 +105,7 @@ with st.sidebar:
     st.divider()
 
     # --- FEATURE 4: WHAT-IF SCENARIOS ---
-    with st.expander("⚡ What-If Scenarios", expanded=True):
+    with st.expander("⚡ What-If Scenarios", expanded=False):
         st.caption("Adjust parameters to see instant cost impact.")
         steel_var = st.slider("📉 Steel Price Variance", -10, 20, 0, format="%d%%")
         concrete_grade = st.radio("🏗️ Concrete Grade", ["M20 (Standard)", "M25 (Heavy Duty)"])
@@ -116,7 +179,7 @@ with tab1:
                     st.success("✅ Dashboard Updated")
         st.session_state.messages.append({"role": "assistant", "content": resp_text})
 
-# --- TAB 2: DASHBOARD (UPDATED WITH TIMELINE) ---
+# --- TAB 2: DASHBOARD (UPDATED) ---
 with tab2:
     col_header, col_btn = st.columns([4,1])
     with col_header:
@@ -133,46 +196,46 @@ with tab2:
         refresh = st.button("🔄 Update Costs", type="primary")
 
     if refresh or 'active_boq' in st.session_state:
-        target_items = st.session_state.get('active_boq', {"Cement": 1, "Sharp Sand": 1, "Granite": 1, "12mm Iron Rod": 1, "9-inch Vibrated Block": 1})
-        live_data = []
-        material_total = 0
+        # Check if we are loading from DB (DataFrame exists) or creating new (Dict exists)
+        if isinstance(st.session_state.get('active_boq'), dict):
+            target_items = st.session_state['active_boq']
+            # Convert raw dict to DataFrame Logic (New Calculation)
+            live_data = []
+            material_total = 0
+            for item_name, quantity in target_items.items():
+                if quantity > 0:
+                    unit_price, full_name = get_live_price(item_name, selected_loc)
+                    if "Iron Rod" in item_name or "Steel" in item_name: unit_price *= (1 + (steel_var / 100.0))
+                    calc_qty = quantity * 1.25 if "Cement" in item_name and "M25" in concrete_grade else quantity
+                    line_total = unit_price * calc_qty
+                    if unit_price == 0: full_name = f"⚠️ {item_name} (Not in DB)"
+                    live_data.append({"Item": item_name, "Description": full_name, "Qty": round(calc_qty, 1), "Unit Price": unit_price, "Total Cost": line_total})
+                    material_total += line_total
+            
+            st.session_state['boq_df'] = pd.DataFrame(live_data) if live_data else pd.DataFrame(columns=["Item", "Description", "Qty", "Unit Price", "Total Cost"])
         
-        # 1. Calculate Materials
-        for item_name, quantity in target_items.items():
-            if quantity > 0:
-                unit_price, full_name = get_live_price(item_name, selected_loc)
-                if "Iron Rod" in item_name or "Steel" in item_name: unit_price *= (1 + (steel_var / 100.0))
-                calc_qty = quantity * 1.25 if "Cement" in item_name and "M25" in concrete_grade else quantity
-                line_total = unit_price * calc_qty
-                if unit_price == 0: full_name = f"⚠️ {item_name} (Not in DB)"
-                live_data.append({"Item": item_name, "Description": full_name, "Qty": round(calc_qty, 1), "Unit Price": unit_price, "Total Cost": line_total})
-                material_total += line_total
-
-        # Save Material DataFrame
-        mat_df = pd.DataFrame(live_data) if live_data else pd.DataFrame(columns=["Item", "Description", "Qty", "Unit Price", "Total Cost"])
-        st.session_state['boq_df'] = mat_df
+        # If 'active_boq' is just a True flag (Loaded from DB), we skip recalculation and trust 'boq_df'
         
-        # 2. Calculate Labor
-        labor_df = calculate_labor_cost(mat_df)
-        st.session_state['labor_df'] = labor_df
-        
-        # 3. Calculate Timeline (NEW!)
-        timeline_df = calculate_project_timeline(mat_df)
-        st.session_state['timeline_df'] = timeline_df
-        
-        labor_total = labor_df['Amount'].sum() if not labor_df.empty else 0
-        st.session_state['total_project_cost'] = material_total + labor_total
+        # Recalculate Labor/Timeline based on current 'boq_df'
+        if 'boq_df' in st.session_state and not st.session_state['boq_df'].empty:
+            mat_df = st.session_state['boq_df']
+            labor_df = calculate_labor_cost(mat_df)
+            timeline_df = calculate_project_timeline(mat_df)
+            
+            st.session_state['labor_df'] = labor_df
+            st.session_state['timeline_df'] = timeline_df
+            
+            material_total = mat_df['Total Cost'].sum()
+            labor_total = labor_df['Amount'].sum() if not labor_df.empty else 0
+            st.session_state['total_project_cost'] = material_total + labor_total
 
     if 'boq_df' in st.session_state:
         mat_df = st.session_state['boq_df']
         
-        # Summary Metrics
         m1, m2, m3 = st.columns(3)
         m1.metric("🧱 Material Cost", f"₦{mat_df['Total Cost'].sum():,.0f}")
         
-        labor_val = 0
-        if 'labor_df' in st.session_state and not st.session_state['labor_df'].empty:
-            labor_val = st.session_state['labor_df']['Amount'].sum()
+        labor_val = st.session_state.get('labor_df', pd.DataFrame())['Amount'].sum() if 'labor_df' in st.session_state and not st.session_state['labor_df'].empty else 0
         m2.metric("👷 Labor & Workmanship", f"₦{labor_val:,.0f}")
         
         grand_total = mat_df['Total Cost'].sum() + labor_val
@@ -180,7 +243,6 @@ with tab2:
         
         st.divider()
 
-        # --- VISUALIZATION TABS (UPDATED) ---
         tab_mat, tab_lab, tab_time = st.tabs(["Materials Breakdown", "Labor Breakdown", "Project Schedule 📅"])
         
         with tab_mat:
@@ -199,12 +261,8 @@ with tab2:
         with tab_time:
             if 'timeline_df' in st.session_state and not st.session_state['timeline_df'].empty:
                 t_df = st.session_state['timeline_df']
-                # Gantt Chart Logic using Altair
                 gantt = alt.Chart(t_df).mark_bar().encode(
-                    x='Start',
-                    x2='End',
-                    y=alt.Y('Phase', sort=None), # Keep order
-                    color=alt.value("#3498db"),
+                    x='Start', x2='End', y=alt.Y('Phase', sort=None), color=alt.value("#3498db"),
                     tooltip=['Phase', 'Start', 'End', 'Duration']
                 ).properties(height=300)
                 st.altair_chart(gantt, use_container_width=True)
