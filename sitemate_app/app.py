@@ -10,7 +10,8 @@ from logic.oyenuga_logic import get_agent_response
 from logic.data_fetcher import get_live_price, get_suppliers_for_location
 from logic.report_generator import generate_pdf_report
 from logic.integrations import get_whatsapp_link, get_email_link, generate_order_message
-from logic.labor_engine import calculate_labor_cost  # Labor Engine Import
+from logic.labor_engine import calculate_labor_cost 
+from logic.timeline_engine import calculate_project_timeline # <--- NEW IMPORT
 
 # 2. PAGE CONFIG
 st.set_page_config(page_title="SiteMate Pro", page_icon="🏗️", layout="wide")
@@ -24,7 +25,7 @@ except:
 with st.sidebar:
     st.image("https://cdn-icons-png.flaticon.com/512/2666/2666505.png", width=60)
     st.title("SiteMate Pro")
-    st.caption("v6.0 | Licensed to: **Lekki Projects Ltd**")
+    st.caption("v7.0 | Licensed to: **Lekki Projects Ltd**")
     st.divider()
     
     # --- FEATURE 5: SMART GEOLOCATION ---
@@ -62,7 +63,7 @@ with st.sidebar:
         st.download_button("📥 Download PDF Report", data=pdf_bytes, file_name=f"SiteMate_Report_{int(time.time())}.pdf", mime="application/pdf", type="primary", use_container_width=True)
         st.divider()
 
-    # LIVE METRIC (Now includes Labor)
+    # LIVE METRIC
     if 'total_project_cost' in st.session_state:
         st.metric(label="Total Project Budget", value=f"₦ {st.session_state['total_project_cost']:,.0f}", delta="Materials + Labor")
     else:
@@ -115,7 +116,7 @@ with tab1:
                     st.success("✅ Dashboard Updated")
         st.session_state.messages.append({"role": "assistant", "content": resp_text})
 
-# --- TAB 2: DASHBOARD (UPDATED FOR LABOR) ---
+# --- TAB 2: DASHBOARD (UPDATED WITH TIMELINE) ---
 with tab2:
     col_header, col_btn = st.columns([4,1])
     with col_header:
@@ -151,9 +152,13 @@ with tab2:
         mat_df = pd.DataFrame(live_data) if live_data else pd.DataFrame(columns=["Item", "Description", "Qty", "Unit Price", "Total Cost"])
         st.session_state['boq_df'] = mat_df
         
-        # 2. Calculate Labor (Integrated)
+        # 2. Calculate Labor
         labor_df = calculate_labor_cost(mat_df)
         st.session_state['labor_df'] = labor_df
+        
+        # 3. Calculate Timeline (NEW!)
+        timeline_df = calculate_project_timeline(mat_df)
+        st.session_state['timeline_df'] = timeline_df
         
         labor_total = labor_df['Amount'].sum() if not labor_df.empty else 0
         st.session_state['total_project_cost'] = material_total + labor_total
@@ -161,7 +166,7 @@ with tab2:
     if 'boq_df' in st.session_state:
         mat_df = st.session_state['boq_df']
         
-        # --- SUMMARY METRICS ---
+        # Summary Metrics
         m1, m2, m3 = st.columns(3)
         m1.metric("🧱 Material Cost", f"₦{mat_df['Total Cost'].sum():,.0f}")
         
@@ -175,8 +180,8 @@ with tab2:
         
         st.divider()
 
-        # --- VISUALIZATION ---
-        tab_mat, tab_lab = st.tabs(["Materials Breakdown", "Labor Breakdown"])
+        # --- VISUALIZATION TABS (UPDATED) ---
+        tab_mat, tab_lab, tab_time = st.tabs(["Materials Breakdown", "Labor Breakdown", "Project Schedule 📅"])
         
         with tab_mat:
             chart = alt.Chart(mat_df).mark_bar().encode(x='Item', y='Total Cost', color=alt.value("#FF8C00"), tooltip=['Item', 'Qty', 'Total Cost']).properties(height=300)
@@ -185,12 +190,27 @@ with tab2:
             
         with tab_lab:
             if 'labor_df' in st.session_state and not st.session_state['labor_df'].empty:
-                st.caption("Estimated workmanship costs based on standard daily rates.")
                 l_chart = alt.Chart(st.session_state['labor_df']).mark_bar().encode(x='Role', y='Amount', color=alt.value("#00AA00")).properties(height=300)
                 st.altair_chart(l_chart, use_container_width=True)
                 st.dataframe(st.session_state['labor_df'], use_container_width=True, hide_index=True)
             else:
                 st.info("Labor calculation requires material data.")
+                
+        with tab_time:
+            if 'timeline_df' in st.session_state and not st.session_state['timeline_df'].empty:
+                t_df = st.session_state['timeline_df']
+                # Gantt Chart Logic using Altair
+                gantt = alt.Chart(t_df).mark_bar().encode(
+                    x='Start',
+                    x2='End',
+                    y=alt.Y('Phase', sort=None), # Keep order
+                    color=alt.value("#3498db"),
+                    tooltip=['Phase', 'Start', 'End', 'Duration']
+                ).properties(height=300)
+                st.altair_chart(gantt, use_container_width=True)
+                st.dataframe(t_df, use_container_width=True, hide_index=True)
+            else:
+                st.info("Timeline requires material data.")
 
     else:
         st.info("Start a chat in **Tab 1** (Type or Voice) to generate a Bill of Quantities.")
@@ -213,12 +233,10 @@ with tab3:
                     st.caption(f"Rating: {supplier['rating']}")
                     st.markdown(f"**Total Quote:** ₦{supplier_total:,.0f}")
                 with c2:
-                    # WhatsApp Button
                     order_msg = generate_order_message(selected_loc, df, supplier['name'])
                     wa_link = get_whatsapp_link(supplier['phone'], order_msg)
                     if wa_link: st.link_button("📲 Order via WhatsApp", wa_link, type="primary", use_container_width=True)
                 with c3:
-                    # Email Button
                     email_link = get_email_link(supplier['email'], selected_loc, order_msg)
                     if email_link:
                         st.markdown(f"""<a href="{email_link}" target="_blank" style="text-decoration:none;"><button style="width:100%; padding: 0.5rem; background-color: #f0f2f6; border: 1px solid #ccc; border-radius: 5px; cursor: pointer;">📧 Order via Email</button></a>""", unsafe_allow_html=True)
