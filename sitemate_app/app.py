@@ -12,7 +12,8 @@ from logic.report_generator import generate_pdf_report
 from logic.integrations import get_whatsapp_link, get_email_link, generate_order_message
 from logic.labor_engine import calculate_labor_cost
 from logic.timeline_engine import calculate_project_timeline
-from logic.db_manager import init_db, save_project, get_all_projects, load_project_data, delete_project # <--- NEW IMPORT
+from logic.db_manager import init_db, save_project, get_all_projects, load_project_data, delete_project
+# REMOVED: vision_engine import
 
 # 2. PAGE CONFIG & DB INIT
 st.set_page_config(page_title="SiteMate Pro", page_icon="🏗️", layout="wide")
@@ -29,11 +30,11 @@ init_db()
 with st.sidebar:
     st.image("https://cdn-icons-png.flaticon.com/512/2666/2666505.png", width=60)
     st.title("SiteMate Pro")
-    st.caption("v7.0 | Licensed to: **Lekki Projects Ltd**")
+    st.caption("v10.0 (Stable) | Licensed to: **Lekki Projects Ltd**")
     st.divider()
     
     # --- FEATURE 3: PROJECT HISTORY (SAVE & LOAD) ---
-    with st.expander("🗂️ My Projects", expanded=True):
+    with st.expander("🗂️ My Projects", expanded=False):
         # A. Save Current
         save_name = st.text_input("Project Name", placeholder="e.g. Lekki Fence")
         if st.button("💾 Save Project"):
@@ -46,7 +47,7 @@ with st.sidebar:
                 if success:
                     st.success(msg)
                     time.sleep(1)
-                    st.rerun() # Refresh to show in load list
+                    st.rerun() 
                 else:
                     st.error(msg)
             else:
@@ -55,9 +56,8 @@ with st.sidebar:
         st.divider()
 
         # B. Load Existing
-        existing_projects = get_all_projects() # Returns [(name, time), ...]
+        existing_projects = get_all_projects() 
         if existing_projects:
-            # Create a list of names for the dropdown
             project_names = [p[0] for p in existing_projects]
             selected_load = st.selectbox("Select Project", project_names)
             
@@ -66,11 +66,10 @@ with st.sidebar:
                 if st.button("📂 Load"):
                     loc, soil, df = load_project_data(selected_load)
                     if df is not None:
-                        # RESTORE SESSION STATE
                         st.session_state['boq_df'] = df
                         st.session_state['last_location'] = loc
                         st.session_state['soil_default'] = soil
-                        st.session_state['active_boq'] = True # Dummy flag
+                        st.session_state['active_boq'] = True 
                         st.success(f"Loaded: {selected_load}")
                         time.sleep(1)
                         st.rerun()
@@ -89,13 +88,11 @@ with st.sidebar:
     st.subheader("📍 Site Context")
     SOIL_DEFAULTS = {"Lekki, Lagos": "Swampy", "Ibadan, Oyo": "Firm/Sandy", "Abuja, FCT": "Firm/Sandy"}
     
-    # Use session state for location to allow "Load Project" to override it
     if "last_location" not in st.session_state:
         st.session_state.last_location = "Lekki, Lagos"
         
     selected_loc = st.selectbox("Project Location", ["Lekki, Lagos", "Ibadan, Oyo", "Abuja, FCT"], index=["Lekki, Lagos", "Ibadan, Oyo", "Abuja, FCT"].index(st.session_state.last_location), key="loc_selector")
     
-    # Update state if changed manually
     if selected_loc != st.session_state.last_location:
         st.session_state.last_location = selected_loc
         st.session_state.soil_default = SOIL_DEFAULTS[selected_loc]
@@ -134,7 +131,8 @@ with st.sidebar:
 
 # 4. MAIN WORKSPACE
 st.title("🏗️ Engineering Command Center")
-tab1, tab2, tab3 = st.tabs(["💬 Engineering Chat", "📊 Cost Dashboard", "🛒 Supplier Marketplace"])
+# REMOVED TAB 4
+tab1, tab2, tab3 = st.tabs(["💬 Chat", "📊 Dashboard", "🛒 Marketplace"])
 
 # --- TAB 1: CHAT ---
 with tab1:
@@ -196,10 +194,9 @@ with tab2:
         refresh = st.button("🔄 Update Costs", type="primary")
 
     if refresh or 'active_boq' in st.session_state:
-        # Check if we are loading from DB (DataFrame exists) or creating new (Dict exists)
+        # 1. LOAD DATA: Handle Dict (New) vs Flag (Loaded)
         if isinstance(st.session_state.get('active_boq'), dict):
             target_items = st.session_state['active_boq']
-            # Convert raw dict to DataFrame Logic (New Calculation)
             live_data = []
             material_total = 0
             for item_name, quantity in target_items.items():
@@ -214,9 +211,7 @@ with tab2:
             
             st.session_state['boq_df'] = pd.DataFrame(live_data) if live_data else pd.DataFrame(columns=["Item", "Description", "Qty", "Unit Price", "Total Cost"])
         
-        # If 'active_boq' is just a True flag (Loaded from DB), we skip recalculation and trust 'boq_df'
-        
-        # Recalculate Labor/Timeline based on current 'boq_df'
+        # 2. RECALCULATE ENGINES (Labor + Timeline)
         if 'boq_df' in st.session_state and not st.session_state['boq_df'].empty:
             mat_df = st.session_state['boq_df']
             labor_df = calculate_labor_cost(mat_df)
@@ -273,15 +268,13 @@ with tab2:
     else:
         st.info("Start a chat in **Tab 1** (Type or Voice) to generate a Bill of Quantities.")
 
-# --- TAB 3: PROCUREMENT (MARKETPLACE) ---
+# --- TAB 3: PROCUREMENT ---
 with tab3:
     st.subheader(f"🛒 Suppliers in {selected_loc}")
-    
     if 'boq_df' in st.session_state and not st.session_state['boq_df'].empty:
         df = st.session_state['boq_df']
         base_total = df['Total Cost'].sum()
         suppliers = get_suppliers_for_location(selected_loc)
-        
         for supplier in suppliers:
             supplier_total = base_total * supplier['markup']
             with st.container(border=True):
@@ -296,7 +289,6 @@ with tab3:
                     if wa_link: st.link_button("📲 Order via WhatsApp", wa_link, type="primary", use_container_width=True)
                 with c3:
                     email_link = get_email_link(supplier['email'], selected_loc, order_msg)
-                    if email_link:
-                        st.markdown(f"""<a href="{email_link}" target="_blank" style="text-decoration:none;"><button style="width:100%; padding: 0.5rem; background-color: #f0f2f6; border: 1px solid #ccc; border-radius: 5px; cursor: pointer;">📧 Order via Email</button></a>""", unsafe_allow_html=True)
+                    if email_link: st.markdown(f"""<a href="{email_link}" target="_blank" style="text-decoration:none;"><button style="width:100%; padding: 0.5rem; background-color: #f0f2f6; border: 1px solid #ccc; border-radius: 5px; cursor: pointer;">📧 Order via Email</button></a>""", unsafe_allow_html=True)
     else:
         st.warning("⚠️ No active project found. Please chat with SiteMate to create a BOQ first.")
