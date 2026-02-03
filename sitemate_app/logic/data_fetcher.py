@@ -1,11 +1,11 @@
 import requests
 import streamlit as st
-import random
+from logic.db_manager import get_db_suppliers 
 
 # ========================================================
-# 1️⃣ MOCK DATABASE (For Marketplace Tab)
+# 1️⃣ STATIC MOCK DATABASE (Default Suppliers)
 # ========================================================
-SUPPLIER_DB = {
+STATIC_SUPPLIERS = {
     "Lekki, Lagos": [
         {"name": "Lekki Depot Direct", "markup": 1.0, "rating": "⭐⭐⭐⭐", "phone": "2348145916352", "email": "sales@lekkidepot.ng"},
         {"name": "BuildRight Nigeria", "markup": 1.05, "rating": "⭐⭐⭐⭐⭐", "phone": "2347066502185", "email": "info@buildright.com"},
@@ -22,7 +22,7 @@ SUPPLIER_DB = {
 }
 
 # ========================================================
-# 2️⃣ FALLBACK PRICES (Used if API Fails)
+# 2️⃣ FALLBACK PRICES (Offline Data)
 # ========================================================
 FALLBACK_PRICES = {
     "Lekki, Lagos": {
@@ -40,11 +40,25 @@ FALLBACK_PRICES = {
 }
 
 # ========================================================
-# 3️⃣ HELPER FUNCTIONS
+# 3️⃣ HELPER FUNCTIONS (Hybrid Logic)
 # ========================================================
 def get_suppliers_for_location(location):
-    """Returns list of suppliers for the specific location."""
-    return SUPPLIER_DB.get(location, SUPPLIER_DB["Lekki, Lagos"])
+    """Returns combined list of Static and Registered Suppliers."""
+    
+    # 1. Start with Static Suppliers
+    # Use .get() with a default empty list to prevent crashes if location matches nothing
+    suppliers = STATIC_SUPPLIERS.get(location, []).copy()
+    
+    # 2. Add Live Registered Suppliers from DB
+    try:
+        db_suppliers = get_db_suppliers(location)
+        if db_suppliers:
+            suppliers.extend(db_suppliers)
+    except Exception as e:
+        # Log error but don't crash the app; just return static list
+        print(f"DB Fetch Error: {e}")
+        
+    return suppliers
 
 def get_live_price(query, location):
     """
@@ -71,7 +85,7 @@ def get_live_price(query, location):
             payload = {
                 "query": query,
                 "hitsPerPage": 1,
-                "optionalWords": query 
+                "optionalWords": query
             }
 
             response = requests.post(url, headers=headers, json=payload, timeout=3)
@@ -83,7 +97,7 @@ def get_live_price(query, location):
                     base_price = best_match.get('price', 0)
                     item_name = best_match.get('name', query)
                     
-                    # Apply Logistics Logic (Since DB is likely Ibadan-based)
+                    # Apply Logistics Logic
                     logistics_note = ""
                     if "Lekki" in location or "Lagos" in location:
                         price = base_price * 1.15
@@ -94,21 +108,17 @@ def get_live_price(query, location):
                     else:
                         price = base_price
                         
-                    # Round price
                     price = round(price / 100) * 100
                     name_desc = f"{item_name}{logistics_note}"
-                    
                     return price, name_desc
     except Exception:
         # Silently fail to fallback if internet/API is down
         pass
 
     # --- METHOD B: FALLBACK TO DICTIONARY ---
-    # If Algolia failed or returned 0, use the hardcoded dictionary
     if price == 0:
         loc_data = FALLBACK_PRICES.get(location, FALLBACK_PRICES["Lekki, Lagos"])
         
-        # Fuzzy match the query to keys in our dictionary
         for key, val in loc_data.items():
             if key.lower() in query.lower() or query.lower() in key.lower():
                 price = val
