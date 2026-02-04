@@ -30,7 +30,7 @@ init_db()
 with st.sidebar:
     st.image("https://cdn-icons-png.flaticon.com/512/2666/2666505.png", width=60)
     st.title("SiteMate Pro")
-    st.caption("v12.2 (Complete) | Licensed to: **Lekki Projects Ltd**")
+    st.caption("v12.3 (Visuals Fixed) | Licensed to: **Lekki Projects Ltd**")
     st.divider()
     
     # --- FEATURE: PROJECT HISTORY ---
@@ -104,9 +104,8 @@ with st.sidebar:
             st.warning(weather_data['advice'])
 
     soil_type = st.select_slider("Soil Condition", options=["Firm/Sandy", "Clay", "Swampy"], value=st.session_state.get("soil_default", "Firm/Sandy"))
-    if soil_type == SOIL_DEFAULTS[selected_loc]: st.caption(f"✨ *Auto-detected soil for {selected_loc.split(',')[0]}*")
     st.divider()
-
+    
     # --- FEATURE: WHAT-IF SCENARIOS ---
     with st.expander("⚡ What-If Scenarios", expanded=False):
         st.caption("Adjust parameters to see instant cost impact.")
@@ -116,12 +115,10 @@ with st.sidebar:
         if steel_var != 0: st.caption(f"ℹ️ *Steel adjusted by {steel_var}%.*")
     st.divider()
     
-    # --- FEATURE: EXPORT (Bank Format) ---
+    # --- FEATURE: EXPORT ---
     if 'boq_df' in st.session_state and not st.session_state['boq_df'].empty:
         st.subheader("📄 Report Type")
         report_choice = st.radio("Format:", ["Standard Estimate", "Bank Loan Valuation"])
-        
-        # Map choice to backend type
         rpt_type = "Bank" if report_choice == "Bank Loan Valuation" else "Standard"
         
         pdf_bytes = generate_pdf_report(
@@ -221,16 +218,10 @@ with tab2:
             for item_name, quantity in target_items.items():
                 if quantity > 0:
                     unit_price, full_name = get_live_price(item_name, selected_loc)
-                    
-                    # Apply What-If Adjustments
-                    if "Iron Rod" in item_name or "Steel" in item_name: 
-                        unit_price *= (1 + (steel_var / 100.0))
-                    
+                    if "Iron Rod" in item_name or "Steel" in item_name: unit_price *= (1 + (steel_var / 100.0))
                     calc_qty = quantity * 1.25 if "Cement" in item_name and "M25" in concrete_grade else quantity
-                    
                     line_total = unit_price * calc_qty
                     if unit_price == 0: full_name = f"⚠️ {item_name} (Not in DB)"
-                    
                     live_data.append({"Item": item_name, "Description": full_name, "Qty": round(calc_qty, 1), "Unit Price": unit_price, "Total Cost": line_total})
                     material_total += line_total
             st.session_state['boq_df'] = pd.DataFrame(live_data) if live_data else pd.DataFrame(columns=["Item", "Description", "Qty", "Unit Price", "Total Cost"])
@@ -253,24 +244,34 @@ with tab2:
         st.divider()
 
         tab_mat, tab_lab, tab_time = st.tabs(["Materials", "Labor", "Schedule"])
+        
+        # --- RESTORED MATERIALS CHART ---
         with tab_mat:
+            chart = alt.Chart(mat_df).mark_bar().encode(
+                x='Item', y='Total Cost', color=alt.value("#FF8C00"), 
+                tooltip=['Item', 'Qty', 'Total Cost']
+            ).properties(height=300)
+            st.altair_chart(chart, use_container_width=True)
             st.dataframe(mat_df, use_container_width=True, hide_index=True)
+            
+        # --- RESTORED LABOR CHART ---
         with tab_lab:
-            st.dataframe(st.session_state.get('labor_df'), use_container_width=True, hide_index=True)
+            if 'labor_df' in st.session_state and not st.session_state['labor_df'].empty:
+                l_chart = alt.Chart(st.session_state['labor_df']).mark_bar().encode(
+                    x='Role', y='Amount', color=alt.value("#00AA00")
+                ).properties(height=300)
+                st.altair_chart(l_chart, use_container_width=True)
+                st.dataframe(st.session_state['labor_df'], use_container_width=True, hide_index=True)
         
         # --- RESTORED GANTT CHART ---
         with tab_time:
             if 'timeline_df' in st.session_state and not st.session_state['timeline_df'].empty:
                 t_df = st.session_state['timeline_df']
-                # Create the Gantt Chart using Altair
                 gantt = alt.Chart(t_df).mark_bar().encode(
-                    x='Start', 
-                    x2='End', 
-                    y=alt.Y('Phase', sort=None), 
+                    x='Start', x2='End', y=alt.Y('Phase', sort=None), 
                     color=alt.value("#3498db"),
                     tooltip=['Phase', 'Start', 'End', 'Duration']
                 ).properties(height=300)
-                
                 st.altair_chart(gantt, use_container_width=True)
                 st.dataframe(t_df, use_container_width=True, hide_index=True)
             else:
