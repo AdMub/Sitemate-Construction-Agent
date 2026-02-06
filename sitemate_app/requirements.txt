@@ -9,3 +9,4 @@ google-generativeai
 fpdf
 streamlit-mic-recorder
 pydantic
+groq
