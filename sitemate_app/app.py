@@ -50,7 +50,7 @@ require_auth()
 with st.sidebar:
     st.image("https://cdn-icons-png.flaticon.com/512/2666/2666505.png", width=50)
     st.markdown("### **SiteMate Pro**")
-    st.caption("Enterprise OS | v2.3 (Final)")
+    st.caption("Enterprise OS | v1.0")
     
     # --- IMPROVED USER CARD (Uses .user-card CSS class) ---
     st.markdown(f"""
