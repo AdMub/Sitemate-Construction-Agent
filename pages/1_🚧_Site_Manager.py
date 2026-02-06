@@ -4,16 +4,22 @@ import altair as alt
 import sys
 import os
 
-# Path fix to ensure we can import from the 'logic' folder
+# Path fix
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from logic.db_manager import get_all_projects, load_project_data, log_expense, get_project_expenses, update_inventory, get_project_inventory, get_inventory_logs
-from logic.report_generator import generate_expense_pdf, generate_inventory_pdf 
+from logic.db_manager import (
+    get_all_projects, load_project_data, log_expense, get_project_expenses, 
+    update_inventory, get_project_inventory, get_inventory_logs, 
+    log_site_photo, get_site_photos,
+    log_site_diary, get_site_diary
+)
+# IMPORT THE NEW FUNCTION HERE
+from logic.report_generator import generate_expense_pdf, generate_inventory_pdf, generate_diary_pdf 
 
 st.set_page_config(page_title="Site Manager", page_icon="🚧", layout="wide")
 
 st.title("🚧 Site Execution Manager")
-st.caption("Track daily spending and material inventory.")
+st.caption("Track daily spending, inventory, logs, and site progress.")
 
 # 1. SELECT PROJECT
 projects = get_all_projects()
@@ -28,7 +34,8 @@ selected_proj = st.selectbox("Select Active Site:", project_names)
 loc, soil, plan_df = load_project_data(selected_proj)
 actual_df = get_project_expenses(selected_proj)
 inventory_df = get_project_inventory(selected_proj)
-history_df = get_inventory_logs(selected_proj) # <--- This loads the missing history data
+history_df = get_inventory_logs(selected_proj)
+diary_df = get_site_diary(selected_proj) # Load Diary
 
 # 2. TOP METRICS
 planned_total = plan_df['Total Cost'].sum() if plan_df is not None else 0
@@ -43,7 +50,7 @@ col3.metric("📉 Remaining", f"₦{remaining:,.0f}", delta_color="normal" if re
 st.divider()
 
 # TABS FOR MANAGEMENT
-tab_finance, tab_inventory = st.tabs(["💵 Financial Ledger", "📦 Material Store"])
+tab_finance, tab_inventory, tab_gallery, tab_diary = st.tabs(["💵 Ledger", "📦 Material Store", "📸 Gallery", "📅 Daily Diary"])
 
 # --- TAB 1: FINANCIAL LEDGER ---
 with tab_finance:
@@ -63,7 +70,6 @@ with tab_finance:
                 else:
                     st.error("Error.")
         
-        # Export Button (Expenses)
         if not actual_df.empty:
             st.divider()
             st.subheader("📄 Export Ledger")
@@ -85,9 +91,7 @@ with tab_finance:
 # --- TAB 2: INVENTORY STORE ---
 with tab_inventory:
     st.subheader("🏗️ Site Inventory Control")
-    
     ic1, ic2 = st.columns([1, 2])
-    
     with ic1:
         st.markdown("#### Update Stock")
         with st.form("inv_form"):
@@ -108,30 +112,101 @@ with tab_inventory:
     with ic2:
         st.markdown("#### 📋 Current Stock & History")
         if not inventory_df.empty:
-            # Chart
             inv_chart = alt.Chart(inventory_df).mark_bar().encode(
-                x='Quantity',
-                y=alt.Y('Item', sort='-x'),
-                color=alt.value("#27ae60"),
-                tooltip=['Item', 'Quantity', 'Unit']
+                x='Quantity', y=alt.Y('Item', sort='-x'), color=alt.value("#27ae60"), tooltip=['Item', 'Quantity', 'Unit']
             ).properties(height=300)
             st.altair_chart(inv_chart, use_container_width=True)
             
-            # History Table
             if not history_df.empty:
                 with st.expander("📜 View Transaction History (Log)", expanded=False):
                     st.dataframe(history_df, hide_index=True, use_container_width=True)
             
-            # Download Report (FIXED LINE BELOW)
             st.divider()
-            inv_pdf_bytes = generate_inventory_pdf(selected_proj, inventory_df, history_df) # <--- Fixed: Added history_df
+            inv_pdf_bytes = generate_inventory_pdf(selected_proj, inventory_df, history_df)
+            st.download_button("📥 Download Inventory Report (PDF)", inv_pdf_bytes, f"{selected_proj}_Inventory.pdf", "application/pdf", type="primary", use_container_width=True)
+        else:
+            st.info("Inventory is empty.")
+
+# --- TAB 3: SITE GALLERY ---
+with tab_gallery:
+    st.subheader("📸 Site Progress Evidence")
+    with st.expander("Upload New Photo", expanded=False):
+        uploaded_file = st.file_uploader("Capture/Upload Image", type=['jpg', 'png'])
+        photo_caption = st.text_input("Caption", placeholder="e.g. Foundation Casting complete")
+        if uploaded_file and st.button("Save Photo"):
+            if log_site_photo(selected_proj, uploaded_file.getvalue(), photo_caption):
+                st.success("Photo Uploaded!")
+                st.rerun()
+
+    photos = get_site_photos(selected_proj)
+    if photos:
+        cols = st.columns(3)
+        for i, (path, cap, time) in enumerate(photos):
+            with cols[i % 3]:
+                if os.path.exists(path):
+                    st.image(path, use_column_width=True) 
+                    st.caption(f"**{time}**: {cap}")
+    else:
+        st.info("No site photos yet.")
+
+# --- TAB 4: DAILY DIARY (UPDATED) ---
+with tab_diary:
+    st.subheader("📅 Daily Site Report (DSR)")
+    
+    dc1, dc2 = st.columns([1, 2])
+    with dc1:
+        with st.form("diary_form"):
+            st.markdown("**Today's Conditions**")
+            weather = st.selectbox("Weather", ["☀️ Sunny", "🌥️ Cloudy", "🌧️ Rainy (Work Stopped)", "⛈️ Stormy"])
+            
+            st.markdown("**Labor Force (Headcount)**")
+            mason = st.number_input("Masons", 0, 50, 0)
+            laborer = st.number_input("Laborers", 0, 50, 0)
+            iron_bender = st.number_input("Iron Benders", 0, 50, 0)
+            carpenter = st.number_input("Carpenters", 0, 50, 0)
+            
+            st.markdown("**Progress & Issues**")
+            work_done = st.text_area("Work Accomplished", placeholder="e.g. Cast 5 columns...")
+            issues = st.text_area("Issues / Delays", placeholder="e.g. Rain delay, Generator fault...")
+            
+            if st.form_submit_button("💾 Submit Daily Report"):
+                workers = {"Mason": mason, "Laborer": laborer, "Iron Bender": iron_bender, "Carpenter": carpenter}
+                success, msg = log_site_diary(selected_proj, weather, workers, work_done, issues)
+                if success:
+                    st.success(msg)
+                    st.rerun()
+                else:
+                    st.error(msg)
+
+    with dc2:
+        # --- NEW: CLEAN TABLE VIEW ---
+        st.markdown("#### 📜 Site Diary History")
+        
+        if not diary_df.empty:
+            # Display as a clean, interactive table
+            st.dataframe(
+                diary_df, 
+                use_container_width=True, 
+                hide_index=True,
+                column_config={
+                    "Date": st.column_config.DateColumn("Date", format="YYYY-MM-DD"),
+                    "Weather": "Condition",
+                    "Labor": "Workers",
+                    "Work Done": "Progress",
+                    "Issues": "Blockers"
+                }
+            )
+            
+            # --- NEW: PDF DOWNLOAD BUTTON ---
+            st.divider()
+            diary_pdf_bytes = generate_diary_pdf(selected_proj, diary_df)
             st.download_button(
-                label="📥 Download Inventory Audit Report (PDF)", 
-                data=inv_pdf_bytes, 
-                file_name=f"{selected_proj}_Inventory.pdf", 
+                label="📥 Download Site Diary Log (PDF)", 
+                data=diary_pdf_bytes, 
+                file_name=f"{selected_proj}_Site_Diary.pdf", 
                 mime="application/pdf", 
                 type="primary",
                 use_container_width=True
             )
         else:
-            st.info("Inventory is empty. Record a delivery (Stock IN) to start.")
+            st.info("No daily reports submitted yet. Use the form to submit today's log.")

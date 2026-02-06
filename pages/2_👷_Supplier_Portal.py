@@ -6,6 +6,7 @@ import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from logic.db_manager import register_supplier, init_db, get_all_supplier_names, get_open_tenders, submit_bid
+from logic.payment_gateway import initialize_payment # <--- Integrated Payment Logic
 
 init_db()
 

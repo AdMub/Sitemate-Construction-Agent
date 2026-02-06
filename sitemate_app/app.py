@@ -3,344 +3,463 @@ import pandas as pd
 import altair as alt
 import time
 
-# --- 1. IMPORTS ---
+# --- 1. PAGE CONFIG ---
+st.set_page_config(page_title="SiteMate Pro", page_icon="🏗️", layout="wide", initial_sidebar_state="expanded")
+
+# --- 2. IMPORTS ---
 from streamlit_mic_recorder import mic_recorder
 from logic.transcriber import transcribe_audio
 from logic.oyenuga_logic import get_agent_response
 from logic.data_fetcher import get_live_price, get_suppliers_for_location
-from logic.report_generator import generate_pdf_report
-from logic.integrations import get_whatsapp_link, get_email_link, generate_order_message
+from logic.report_generator import generate_pdf_report, generate_diary_pdf
+from logic.integrations import get_whatsapp_link, get_email_link
 from logic.labor_engine import calculate_labor_cost
 from logic.timeline_engine import calculate_project_timeline
-from logic.db_manager import init_db, save_project, get_all_projects, load_project_data, delete_project, get_bids_for_project
+from logic.db_manager import (
+    init_db, save_project, get_all_projects, load_project_data, delete_project, 
+    get_bids_for_project, register_supplier, get_open_tenders, submit_bid,
+    log_expense, get_project_expenses, update_inventory, get_project_inventory, 
+    get_inventory_logs, log_site_diary, get_site_diary, 
+    get_all_supplier_names, update_bid_status, get_supplier_bids # Added new imports
+)
 from logic.weather_engine import get_site_weather
 from logic.expert_verifier import verify_project_budget 
 from logic.feasibility_engine import check_feasibility 
+from logic.auth import require_auth, logout 
 
-# 2. PAGE CONFIG & DB INIT
-st.set_page_config(page_title="SiteMate Pro", page_icon="🏗️", layout="wide")
-try:
-    with open('assets/style.css') as f:
-        st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
-except:
-    pass 
+# --- 3. CUSTOM STYLING ---
+st.markdown("""
+<style>
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
+    [data-testid="stSidebar"] { background-color: #1E1E1E; border-right: 1px solid #333; }
+    .stTabs [data-baseweb="tab-list"] { gap: 24px; }
+    .stTabs [data-baseweb="tab"] { height: 50px; color: #888; }
+    .stTabs [data-baseweb="tab"][aria-selected="true"] { color: #FF8C00; border-bottom: 2px solid #FF8C00; }
+</style>
+""", unsafe_allow_html=True)
 
 init_db()
 
-# 3. SIDEBAR
+# --- 4. AUTHENTICATION ---
+require_auth()
+
+# --- 5. SIDEBAR NAVIGATION ---
 with st.sidebar:
-    st.image("https://cdn-icons-png.flaticon.com/512/2666/2666505.png", width=60)
-    st.title("SiteMate Pro")
-    st.caption("v14.2 (Robust & Complete) | Licensed to: **Lekki Projects Ltd**")
-    st.divider()
+    st.image("https://cdn-icons-png.flaticon.com/512/2666/2666505.png", width=50)
+    st.markdown("### **SiteMate Pro**")
+    st.caption("Enterprise OS | v2.3 (Final)")
     
-    # --- FEATURE: SMART GEOLOCATION ---
-    st.subheader("📍 Site Context")
+    st.markdown(f"""
+    <div style='background-color: #2b313e; padding: 10px; border-radius: 5px; margin-bottom: 20px;'>
+        <small>Logged in as:</small><br>
+        <strong>{st.session_state['user_name']}</strong><br>
+        <span style='color: #00FF00; font-size: 0.8em;'>● Online</span>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # --- GLOBAL CONTEXT ---
+    st.markdown("#### 📍 Context")
     if "last_location" not in st.session_state: st.session_state.last_location = "Lekki, Lagos"
-    selected_loc = st.selectbox("Project Location", ["Lekki, Lagos", "Ibadan, Oyo", "Abuja, FCT"], index=["Lekki, Lagos", "Ibadan, Oyo", "Abuja, FCT"].index(st.session_state.last_location), key="loc_selector")
+    selected_loc = st.selectbox("Location", ["Lekki, Lagos", "Ibadan, Oyo", "Abuja, FCT"], index=["Lekki, Lagos", "Ibadan, Oyo", "Abuja, FCT"].index(st.session_state.last_location))
     
     if selected_loc != st.session_state.last_location:
         st.session_state.last_location = selected_loc
+        st.rerun()
 
-    # Weather Widget
+    # --- WEATHER WIDGET ---
     weather_data = get_site_weather(selected_loc)
     if weather_data and "error" not in weather_data:
         st.markdown(f"""
-        <div style="background-color: #f0f2f6; color: #333333; padding: 10px; border-radius: 8px; border-left: 4px solid #3498db;">
-            <b>🌤️ Site Weather:</b> {weather_data['temp']}°C | {weather_data['condition']}
+        <div style="background-color: #262730; color: #fff; padding: 10px; border-radius: 8px; border-left: 4px solid #FF8C00; margin-bottom: 15px;">
+            <b>🌤️ Weather:</b> {weather_data['temp']}°C | {weather_data['condition']}
         </div>
         """, unsafe_allow_html=True)
-
+    
     st.divider()
+    
+    # NAVIGATION MENU
+    available_tabs = []
+    if "plan" in st.session_state.permissions: available_tabs.append("📐 Planning & AI")
+    if "bid" in st.session_state.permissions: available_tabs.append("🛒 Marketplace")
+    if "supply" in st.session_state.permissions: available_tabs.append("🚚 Supplier Portal")
+    if "site" in st.session_state.permissions: available_tabs.append("🚧 Site Operations")
+    
+    selected_nav = st.radio("Go to:", available_tabs, label_visibility="collapsed")
+    
+    st.divider()
+    if st.button("🚪 Sign Out"): logout()
 
-    # --- FEATURE: FEASIBILITY QUICK-CHECK (UPDATED) ---
-    with st.expander("📉 Quick Feasibility Check", expanded=True):
-        st.caption("Can I afford this project?")
-        
-        # 1. LAND SIZE INPUT (NEW)
-        land_size = st.number_input("Land Size (sqm)", min_value=300, value=600, step=50, help="Standard Plot is ~600sqm")
-        
-        # 2. BUILDING TYPE
-        f_type = st.selectbox("Structure Type", ["3-Bedroom Bungalow", "4-Bedroom Duplex", "BQ / Boys Quarters", "Perimeter Fence (Plot)"])
-        
-        f_floors = 1
-        if "Duplex" not in f_type and "Fence" not in f_type:
-            f_floors = st.slider("Floors", 1, 3, 1)
+# --- 6. MAIN CONTENT AREA ---
+
+# ==========================================
+# 📐 TAB 1: PLANNING & AI
+# ==========================================
+if selected_nav == "📐 Planning & AI":
+    st.title("📐 Engineering Command Center")
+    st.caption(f"Project Planning & Estimation for **{selected_loc}**")
+    
+    p_tab1, p_tab2, p_tab3 = st.tabs(["💬 AI Architect", "⚡ Analysis & Scenarios", "📄 Reports & Exports"])
+    
+    with p_tab1:
+        # Chat Interface
+        if "messages" not in st.session_state: st.session_state.messages = []
+        for msg in st.session_state.messages:
+            with st.chat_message(msg["role"]): st.markdown(msg["content"])
             
-        if st.button("💰 Estimate Range"):
-            # Pass land_size to the engine
-            result = check_feasibility(selected_loc, f_type, f_floors, land_size)
-            st.markdown(f"**Range:** {result['low']} - {result['high']}")
-            st.caption(result['details'])
-    # ------------------------------------
+        # Audio Input
+        c1, c2 = st.columns([1, 6])
+        with c1: audio_data = mic_recorder(start_prompt="🎤 Record", stop_prompt="⏹️ Stop", key="recorder", use_container_width=True)
+        
+        if audio_data and audio_data['bytes']:
+             if "last_audio_id" not in st.session_state or st.session_state.get('last_audio_id') != audio_data['id']:
+                st.session_state.last_audio_id = audio_data['id']
+                with st.spinner("Transcribing..."):
+                    text = transcribe_audio(audio_data['bytes'])
+                    if text: 
+                        st.session_state.messages.append({"role": "user", "content": f"🎤 {text}"})
+                        soil = "Swampy" if "Lekki" in selected_loc else "Firm"
+                        resp, boq = get_agent_response(text, selected_loc, soil)
+                        st.session_state.messages.append({"role": "assistant", "content": resp})
+                        if boq:
+                             st.session_state['active_boq'] = boq
+                             st.session_state['boq_df'] = pd.DataFrame([{"Item": k, "Qty": v, "Unit Price": get_live_price(k, selected_loc)[0], "Total Cost": v * get_live_price(k, selected_loc)[0]} for k, v in boq.items()])
+                        st.rerun()
 
-    st.divider()
+        if prompt := st.chat_input("Ask SiteMate..."):
+            st.session_state.messages.append({"role": "user", "content": prompt})
+            with st.chat_message("user"): st.markdown(prompt)
+            with st.chat_message("assistant"):
+                with st.spinner("Calculating..."):
+                    soil = "Swampy" if "Lekki" in selected_loc else "Firm"
+                    resp, boq = get_agent_response(prompt, selected_loc, soil)
+                    st.markdown(resp)
+                    st.session_state.messages.append({"role": "assistant", "content": resp})
+                    
+                    if boq:
+                        st.session_state['active_boq'] = boq
+                        st.session_state['boq_df'] = pd.DataFrame([{"Item": k, "Qty": v, "Unit Price": get_live_price(k, selected_loc)[0], "Total Cost": v * get_live_price(k, selected_loc)[0]} for k, v in boq.items()])
+                        st.success("✅ BOQ Generated")
 
-    # --- FEATURE: PROJECT HISTORY ---
-    with st.expander("🗂️ My Projects", expanded=False):
-        save_name = st.text_input("Save As:", placeholder="e.g. Lekki Fence")
-        if st.button("💾 Save Project"):
-            if 'boq_df' in st.session_state and not st.session_state['boq_df'].empty:
-                soil_to_save = st.session_state.get('soil_default', "Firm/Sandy")
-                success, msg = save_project(save_name, selected_loc, soil_to_save, st.session_state['boq_df'])
-                if success:
-                    st.session_state['current_project_name'] = save_name 
-                    st.success(msg)
-                    time.sleep(1)
-                    st.rerun() 
-                else:
-                    st.error(msg)
-            else:
-                st.warning("No active project data to save.")
+        # Save Logic
+        if 'active_boq' in st.session_state:
+            with st.expander("💾 Save This Project to Cloud", expanded=True):
+                c1, c2 = st.columns([3, 1])
+                with c1: save_name = st.text_input("Project Name", placeholder="e.g. Lekki Bungalow Phase 1")
+                with c2: 
+                    if st.button("Save Project", type="primary", use_container_width=True):
+                        soil_to_save = st.session_state.get('soil_default', "Firm")
+                        success, msg = save_project(save_name, selected_loc, soil_to_save, st.session_state['boq_df'])
+                        if success:
+                            st.session_state['current_project_name'] = save_name
+                            st.success("Saved & Synced to Algolia!")
+                        else: st.error(msg)
 
-        st.divider()
-
-        existing_projects = get_all_projects() 
-        if existing_projects:
-            project_names = [p[0] for p in existing_projects]
-            selected_load = st.selectbox("Select Project", project_names)
+    # --- RESTORED: WHAT-IF & EXPERT VERIFICATION ---
+    with p_tab2:
+        st.subheader("⚡ Risk Analysis & Scenarios")
+        
+        if 'boq_df' in st.session_state and not st.session_state['boq_df'].empty:
+            
+            # 1. WHAT-IF SCENARIOS
             c1, c2 = st.columns(2)
+            with c1: steel_var = st.slider("📉 Steel Price Variance", -10, 20, 0, format="%d%%")
+            with c2: concrete_grade = st.radio("🏗️ Concrete Grade", ["M20 (Standard)", "M25 (Heavy Duty)"])
+
+            if st.button("🔄 Recalculate Budget"):
+                target_items = st.session_state['active_boq']
+                live_data = []
+                for item_name, quantity in target_items.items():
+                    if quantity > 0:
+                        unit_price, full_name = get_live_price(item_name, selected_loc)
+                        if "Iron Rod" in item_name or "Steel" in item_name: unit_price *= (1 + (steel_var / 100.0))
+                        calc_qty = quantity * 1.25 if "Cement" in item_name and "M25" in concrete_grade else quantity
+                        live_data.append({"Item": item_name, "Qty": round(calc_qty, 1), "Unit Price": unit_price, "Total Cost": unit_price * calc_qty})
+                
+                st.session_state['boq_df'] = pd.DataFrame(live_data)
+                st.success("Budget Recalculated!")
+            
+            st.dataframe(st.session_state['boq_df'], use_container_width=True)
+            st.metric("New Grand Total", f"₦{st.session_state['boq_df']['Total Cost'].sum():,.0f}")
+            
+            st.divider()
+
+            # 2. RESTORED: EXPERT VERIFICATION SERVICE
+            with st.expander("🛡️ Expert Verification Service (Senior QS)", expanded=False):
+                st.info("Have a Senior QS AI audit your budget before sending it to a bank.")
+                if st.button("🔍 Verify My Budget"):
+                    with st.spinner("Consulting Senior Engineer AI..."):
+                        audit_report = verify_project_budget(st.session_state['boq_df'], selected_loc)
+                        st.markdown(audit_report)
+        else:
+            st.info("Generate a BOQ in the Chat tab first.")
+
+    # --- REPORTS & PROJECT MANAGEMENT ---
+    with p_tab3:
+        st.subheader("📂 Project Management & Reports")
+        
+        # 1. PROJECT LOADER (LOAD / DELETE)
+        projects = get_all_projects()
+        if projects:
+            proj_list = [p[0] for p in projects]
+            
+            c1, c2, c3 = st.columns([3, 1, 1])
             with c1:
+                sel_proj = st.selectbox("Select Project", proj_list, label_visibility="collapsed")
+            with c2:
                 if st.button("📂 Load"):
-                    loc, soil, df = load_project_data(selected_load)
+                    loc, soil, df = load_project_data(sel_proj)
                     if df is not None:
                         st.session_state['boq_df'] = df
-                        st.session_state['last_location'] = loc
-                        st.session_state['soil_default'] = soil
-                        st.session_state['active_boq'] = True
-                        st.session_state['current_project_name'] = selected_load 
-                        st.success(f"Loaded: {selected_load}")
+                        st.session_state['current_project_name'] = sel_proj
+                        st.success(f"Loaded {sel_proj}")
                         time.sleep(1)
                         st.rerun()
-            with c2:
-                if st.button("❌ Delete"):
-                    delete_project(selected_load)
-                    st.warning("Deleted.")
+            with c3:
+                # --- NEW DELETE BUTTON ---
+                if st.button("❌ Delete", type="primary"):
+                    delete_project(sel_proj)
+                    if st.session_state.get('current_project_name') == sel_proj:
+                        st.session_state['current_project_name'] = None
+                        st.session_state['boq_df'] = pd.DataFrame()
+                    st.toast(f"Deleted {sel_proj}")
                     time.sleep(1)
                     st.rerun()
         else:
-            st.caption("No saved projects yet.")
-    
-    st.divider()
-    
-    # --- FEATURE: EXPORT ---
-    if 'boq_df' in st.session_state and not st.session_state['boq_df'].empty:
-        st.subheader("📄 Report Type")
-        report_choice = st.radio("Format:", ["Standard Estimate", "Bank Loan Valuation"])
-        rpt_type = "Bank" if report_choice == "Bank Loan Valuation" else "Standard"
-        
-        pdf_bytes = generate_pdf_report(
-            user_query=st.session_state.get('last_user_query', 'N/A'),
-            location=selected_loc,
-            soil_type=st.session_state.get('soil_default', "Firm"),
-            ai_text=st.session_state.get('last_ai_response', ''),
-            boq_dataframe=st.session_state['boq_df'],
-            report_type=rpt_type
-        )
-        st.download_button("📥 Download PDF", data=pdf_bytes, file_name=f"SiteMate_{rpt_type}_Report.pdf", mime="application/pdf", type="primary", use_container_width=True)
+            st.info("No saved projects found.")
 
-# 4. MAIN WORKSPACE
-st.title("🏗️ Engineering Command Center")
-tab1, tab2, tab3 = st.tabs(["💬 Chat", "📊 Dashboard", "🛒 Marketplace (Bids)"])
-
-# --- TAB 1: CHAT ---
-with tab1:
-    if "messages" not in st.session_state: st.session_state.messages = []
-    for message in st.session_state.messages:
-        with st.chat_message(message["role"]): st.markdown(message["content"])
-
-    with st.container():
-        c1, c2 = st.columns([1, 6])
-        with c1: audio_data = mic_recorder(start_prompt="🎤 Record", stop_prompt="⏹️ Stop", key="recorder", use_container_width=True) 
-        with c2: st.caption("Click 'Record' to speak, or type below.")
-
-        if audio_data and audio_data['bytes']:
-            if "last_audio_id" not in st.session_state or st.session_state.last_audio_id != audio_data['id']:
-                st.session_state.last_audio_id = audio_data['id']
-                with st.spinner("🧠 SiteMate is thinking..."):
-                    voice_text = transcribe_audio(audio_data['bytes'])
-                    if voice_text and "Error" not in voice_text:
-                        st.session_state.messages.append({"role": "user", "content": f"🎤 *Voice:* {voice_text}"})
-                        # Determine soil based on location
-                        soil_type = "Swampy" if "Lekki" in selected_loc else "Firm/Sandy"
-                        ai_resp, boq = get_agent_response(voice_text, selected_loc, soil_type)
-                        st.session_state['last_ai_response'] = ai_resp
-                        st.session_state['last_user_query'] = voice_text
-                        st.session_state.messages.append({"role": "assistant", "content": ai_resp})
-                        st.markdown(ai_resp)
-                        if boq:
-                            st.session_state['active_boq'] = boq
-                            st.toast("✅ Project Budget Updated!", icon="💰")
-                            time.sleep(1)
-                            st.rerun()
-
-    if prompt := st.chat_input("Type your engineering request..."):
-        st.session_state.messages.append({"role": "user", "content": prompt})
-        with st.chat_message("user"): st.markdown(prompt)
-        with st.chat_message("assistant"):
-            with st.spinner("Analyzing..."):
-                soil_type = "Swampy" if "Lekki" in selected_loc else "Firm/Sandy"
-                resp_text, boq_data = get_agent_response(prompt, selected_loc, soil_type)
-                st.session_state['last_ai_response'] = resp_text
-                st.session_state['last_user_query'] = prompt
-                st.markdown(resp_text)
-                if boq_data:
-                    st.session_state['active_boq'] = boq_data
-                    st.success("✅ Dashboard Updated")
-        st.session_state.messages.append({"role": "assistant", "content": resp_text})
-
-# --- TAB 2: DASHBOARD (ROBUST LOGIC) ---
-with tab2:
-    col_header, col_btn = st.columns([4,1])
-    with col_header:
-        if 'active_boq' in st.session_state:
-            st.subheader(f"📊 Project Analytics ({selected_loc})")
-            
-            # What-If Scenarios (Moved here for better UX)
-            with st.expander("⚡ What-If Scenarios", expanded=False):
-                steel_var = st.slider("📉 Steel Price Variance", -10, 20, 0, format="%d%%")
-                concrete_grade = st.radio("🏗️ Concrete Grade", ["M20 (Standard)", "M25 (Heavy Duty)"])
-                if concrete_grade == "M25 (Heavy Duty)": st.caption("ℹ️ *M25 requires ~25% more cement.*")
-        else:
-            st.subheader(f"📉 Market Unit Rates ({selected_loc})")
-            steel_var = 0
-            concrete_grade = "M20"
-
-    with col_btn:
-        refresh = st.button("🔄 Update", type="primary")
-        
-    # --- EXPERT WITNESS VERIFICATION ---
-    if 'boq_df' in st.session_state and not st.session_state['boq_df'].empty:
-        with st.expander("🛡️ Expert Verification Service", expanded=False):
-            st.info("Have a Senior QS Audit your budget before sending to a bank.")
-            if st.button("🔍 Verify My Budget"):
-                with st.spinner("Consulting Senior Engineer AI..."):
-                    audit_report = verify_project_budget(st.session_state['boq_df'], selected_loc)
-                    st.markdown(audit_report)
-
-    # --- ROBUST CALCULATION LOGIC ---
-    if refresh or 'active_boq' in st.session_state:
-        if isinstance(st.session_state.get('active_boq'), dict):
-            target_items = st.session_state['active_boq']
-            live_data = []
-            material_total = 0
-            for item_name, quantity in target_items.items():
-                if quantity > 0:
-                    unit_price, full_name = get_live_price(item_name, selected_loc)
-                    
-                    # 1. Apply Steel Variance (Logic Restored)
-                    if "Iron Rod" in item_name or "Steel" in item_name: 
-                        unit_price *= (1 + (steel_var / 100.0))
-                    
-                    # 2. Apply Concrete Grade Logic (Logic Restored)
-                    calc_qty = quantity * 1.25 if "Cement" in item_name and "M25" in concrete_grade else quantity
-                    
-                    line_total = unit_price * calc_qty
-                    if unit_price == 0: full_name = f"⚠️ {item_name} (Not in DB)"
-                    
-                    live_data.append({"Item": item_name, "Description": full_name, "Qty": round(calc_qty, 1), "Unit Price": unit_price, "Total Cost": line_total})
-                    material_total += line_total
-            st.session_state['boq_df'] = pd.DataFrame(live_data) if live_data else pd.DataFrame(columns=["Item", "Description", "Qty", "Unit Price", "Total Cost"])
-        
-        # Calculate Labor & Timeline
-        if 'boq_df' in st.session_state and not st.session_state['boq_df'].empty:
-            mat_df = st.session_state['boq_df']
-            labor_df = calculate_labor_cost(mat_df)
-            timeline_df = calculate_project_timeline(mat_df)
-            st.session_state['labor_df'] = labor_df
-            st.session_state['timeline_df'] = timeline_df
-            st.session_state['total_project_cost'] = mat_df['Total Cost'].sum() + (labor_df['Amount'].sum() if not labor_df.empty else 0)
-
-    # --- DISPLAY METRICS & CHARTS ---
-    if 'boq_df' in st.session_state:
-        mat_df = st.session_state['boq_df']
-        m1, m2, m3 = st.columns(3)
-        m1.metric("🧱 Material Cost", f"₦{mat_df['Total Cost'].sum():,.0f}")
-        labor_val = st.session_state.get('labor_df', pd.DataFrame())['Amount'].sum() if 'labor_df' in st.session_state and not st.session_state['labor_df'].empty else 0
-        m2.metric("👷 Labor", f"₦{labor_val:,.0f}")
-        m3.metric("💰 Grand Total", f"₦{mat_df['Total Cost'].sum() + labor_val:,.0f}")
         st.divider()
 
-        tab_mat, tab_lab, tab_time = st.tabs(["Materials", "Labor", "Schedule"])
-        
-        # --- MATERIALS CHART (Restored) ---
-        with tab_mat:
-            chart = alt.Chart(mat_df).mark_bar().encode(
-                x='Item', y='Total Cost', color=alt.value("#FF8C00"), 
-                tooltip=['Item', 'Qty', 'Total Cost']
-            ).properties(height=300)
-            st.altair_chart(chart, use_container_width=True)
-            st.dataframe(mat_df, use_container_width=True, hide_index=True)
+        # 2. REPORT GENERATION
+        st.subheader("🖨️ Generate PDF Reports")
+        if 'boq_df' in st.session_state and not st.session_state['boq_df'].empty:
+            report_choice = st.radio("Select Format:", ["Standard Estimate", "Bank Loan Valuation (Financier Ready)"])
             
-        # --- LABOR CHART (Restored) ---
-        with tab_lab:
-            if 'labor_df' in st.session_state and not st.session_state['labor_df'].empty:
-                l_chart = alt.Chart(st.session_state['labor_df']).mark_bar().encode(
-                    x='Role', y='Amount', color=alt.value("#00AA00")
-                ).properties(height=300)
-                st.altair_chart(l_chart, use_container_width=True)
-                st.dataframe(st.session_state['labor_df'], use_container_width=True, hide_index=True)
-        
-        # --- GANTT CHART (Restored) ---
-        with tab_time:
-            if 'timeline_df' in st.session_state and not st.session_state['timeline_df'].empty:
-                t_df = st.session_state['timeline_df']
-                gantt = alt.Chart(t_df).mark_bar().encode(
-                    x='Start', x2='End', y=alt.Y('Phase', sort=None), 
-                    color=alt.value("#3498db"),
-                    tooltip=['Phase', 'Start', 'End', 'Duration']
-                ).properties(height=300)
-                st.altair_chart(gantt, use_container_width=True)
-                st.dataframe(t_df, use_container_width=True, hide_index=True)
-            else:
-                st.info("Timeline requires material data.")
+            rpt_type = "Bank" if "Bank" in report_choice else "Standard"
+            
+            pdf_bytes = generate_pdf_report(
+                user_query="Project Estimation",
+                location=selected_loc,
+                soil_type="Standard",
+                ai_text="Generated via SiteMate Pro",
+                boq_dataframe=st.session_state['boq_df'],
+                report_type=rpt_type
+            )
+            
+            st.download_button(
+                label=f"📥 Download {rpt_type} PDF", 
+                data=pdf_bytes, 
+                file_name=f"SiteMate_{rpt_type}_Report.pdf", 
+                mime="application/pdf", 
+                type="primary", 
+                use_container_width=True
+            )
+        else:
+            st.caption("Load a project above or create a new one in 'AI Architect' to generate reports.")
 
-# --- TAB 3: MARKETPLACE (LIVE BIDS) ---
-with tab3:
-    st.subheader(f"🛒 Marketplace: {selected_loc}")
-    
-    # 1. LIVE BIDS SECTION (The New Uber Logic)
+# ==========================================
+# 🛒 TAB 2: MARKETPLACE (The "Admin" View)
+# ==========================================
+elif selected_nav == "🛒 Marketplace":
+    st.title("🛒 Procurement Marketplace")
     current_proj = st.session_state.get('current_project_name')
-    if current_proj:
-        st.info(f"Viewing Bids for Project: **{current_proj}**")
+    if not current_proj:
+        st.warning("⚠️ No Project Selected. Please go to 'Planning' and Load/Save a project first.")
+    else:
+        st.info(f"Viewing Bids for: **{current_proj}**")
+        _, _, proj_df = load_project_data(current_proj)
+        est_total = proj_df['Total Cost'].sum() if proj_df is not None else 0
         bids = get_bids_for_project(current_proj)
         
-        if bids:
-            st.success(f"🔔 {len(bids)} Suppliers have bid on this project!")
+        # --- SECTION 1: LIVE BIDS ---
+        st.markdown("### 🔔 Active Bids")
+        if not bids: 
+            st.info("Waiting for suppliers to bid...")
+        else:
             for bid in bids:
                 with st.container(border=True):
                     c1, c2, c3 = st.columns([2, 2, 1])
-                    with c1: 
+                    with c1:
                         st.markdown(f"### 🏭 {bid['supplier_name']}")
-                        st.caption(f"Bid Date: {bid['timestamp']}")
-                    with c2: 
+                        
+                        # AI JUDGMENT
+                        if est_total > 0:
+                            diff = ((bid['amount'] - est_total) / est_total) * 100
+                            if abs(diff) <= 10: st.success(f"✅ Fair Price (Within {diff:.1f}% of AI Estimate)")
+                            elif diff > 10: st.warning(f"⚠️ High Bid (+{diff:.1f}%)")
+                            else: st.warning(f"📉 Suspiciously Low ({diff:.1f}%)")
+                            
+                    with c2:
                         st.metric("Bid Amount", f"₦{bid['amount']:,.0f}")
+                        st.caption(f"Status: **{bid['status']}**")
+                    
                     with c3:
-                        if st.button("✅ Accept", key=f"acc_{bid['id']}"):
-                            st.balloons()
-                            st.success("Bid Accepted! Contacting supplier...")
-        else:
-            st.warning("No bids received yet. Suppliers will see this project in the Portal once saved.")
-    else:
-        st.caption("💡 Save your project in the sidebar to start receiving bids from suppliers.")
+                         # ACCEPT / REJECT LOGIC
+                         if bid['status'] == 'Pending':
+                             if st.button("✅ Accept", key=f"acc_{bid['id']}"):
+                                 update_bid_status(bid['id'], "Accepted")
+                                 st.rerun()
+                             
+                             if st.button("❌ Reject", key=f"rej_{bid['id']}"):
+                                 update_bid_status(bid['id'], "Rejected")
+                                 st.rerun()
+                         
+                         elif bid['status'] == 'Accepted':
+                             st.success("Accepted!")
+                             st.link_button("💳 Pay Now", "https://paystack.com/pay/sitemate-demo")
+                         
+                         elif bid['status'] == 'Rejected':
+                             st.error("Rejected")
 
-    st.divider()
-    st.markdown("### 📚 Standard Suppliers")
+        st.divider()
+
+        # --- SECTION 2: STANDARD SUPPLIERS (RESTORED) ---
+        st.markdown("### 📚 Standard Suppliers Directory")
+        st.caption("Contact registered suppliers directly if you don't want to wait for bids.")
+        
+        # Logic: If we have a BOQ, show estimated quotes from standard suppliers
+        if 'boq_df' in st.session_state and not st.session_state['boq_df'].empty:
+            base_total = st.session_state['boq_df']['Total Cost'].sum()
+            suppliers = get_suppliers_for_location(selected_loc) # Fetches from DB
+            
+            if not suppliers:
+                st.warning("No suppliers registered in this location yet.")
+            else:
+                for sup in suppliers:
+                    # Simple logic: Supplier Quote = Base Cost * Markup (e.g. 1.1)
+                    supplier_total = base_total * sup.get('markup', 1.05)
+                    
+                    with st.container(border=True):
+                        c1, c2, c3 = st.columns([3, 1, 2])
+                        with c1:
+                            st.markdown(f"**{sup['name']}**")
+                            st.caption(f"⭐ {sup.get('rating', 'New')} | 📍 {selected_loc}")
+                            st.write(f"**Est. Quote:** ₦{supplier_total:,.0f}")
+                        with c2:
+                            # WhatsApp Link
+                            st.link_button("📲 Chat", get_whatsapp_link(sup.get('phone', '000'), "Hello, I have a project..."))
+                        with c3:
+                            # Email Link
+                            email_link = get_email_link(sup.get('email', 'test@test.com'), selected_loc, "Order Inquiry")
+                            if email_link: 
+                                st.markdown(f'<a href="{email_link}" target="_blank" style="text-decoration:none;"><button style="width:100%; padding: 0.5rem; background-color: #f0f2f6; border: 1px solid #ccc; border-radius: 5px;">📧 Send Email</button></a>', unsafe_allow_html=True)
+        else:
+            st.info("Create a BOQ in the Planning tab to see supplier estimates.")
+
+# ==========================================
+# 🚚 TAB 3: SUPPLIER PORTAL (The "Vendor" View)
+# ==========================================
+elif selected_nav == "🚚 Supplier Portal":
+    st.title("🚚 Supplier Portal")
     
-    # 2. STANDARD SUPPLIERS (Fallback List)
-    if 'boq_df' in st.session_state:
-        base_total = st.session_state['boq_df']['Total Cost'].sum()
-        for sup in get_suppliers_for_location(selected_loc):
-            supplier_total = base_total * sup.get('markup', 1.0)
-            with st.container(border=True):
-                c1, c2, c3 = st.columns([3, 1, 2])
-                with c1:
-                    st.markdown(f"**{sup['name']}** ({sup.get('rating', 'New')})")
-                    st.caption(f"Est. Quote: ₦{supplier_total:,.0f}")
-                with c2:
-                    st.link_button("📲 Chat", get_whatsapp_link(sup.get('phone'), "Hello"))
-                with c3:
-                    email_link = get_email_link(sup.get('email'), selected_loc, "Order")
-                    if email_link: st.markdown(f"""<a href="{email_link}" target="_blank" style="text-decoration:none;"><button style="width:100%; padding: 0.5rem; background-color: #f0f2f6; border: 1px solid #ccc; border-radius: 5px; cursor: pointer;">📧 Email</button></a>""", unsafe_allow_html=True)
+    # --- 1. DEMO IMPERSONATION (DROPDOWN FIXED) ---
+    active_user = st.session_state['user_name']
+    
+    if st.session_state.get('role') == "Chief Engineer":
+        st.info("👮 **Admin Mode:** You are impersonating a supplier.")
+        
+        # FETCH REGISTERED SUPPLIERS FOR DROPDOWN
+        registered_suppliers = get_all_supplier_names()
+        active_user = st.selectbox("Simulate As:", registered_suppliers)
+    # ---------------------------------------------
+    
+    s_tab1, s_tab2, s_tab3 = st.tabs(["💰 Job Board", "📂 My Bids (Status)", "📝 New Registration"])
+    
+    # --- JOB BOARD ---
+    with s_tab1:
+        st.markdown(f"### 🔍 Live Tenders (Viewing as: {active_user})")
+        tenders = get_open_tenders(selected_loc)
+        
+        if not tenders:
+            st.info(f"No active tenders found in {selected_loc}.")
+        else:
+            for job in tenders:
+                with st.expander(f"📢 {job['name']} ({job['items']} Items Needed)"):
+                    st.write(f"**Est. Value:** ₦{job['est_value']:,.0f}")
+                    c1, c2 = st.columns([2,1])
+                    with c1: bid_amt = st.number_input("Your Bid (₦)", min_value=100000.0, step=10000.0, key=f"bid_{job['name']}")
+                    with c2:
+                        st.write("") 
+                        if st.button("🚀 Submit Bid", key=f"sub_{job['name']}"):
+                            if submit_bid(job['name'], active_user, bid_amt, "08012345678"):
+                                st.success(f"Bid Sent as '{active_user}'!")
+                            else: st.error("Error submitting bid.")
+
+    # --- NEW: MY BIDS (TRACKING) ---
+    with s_tab2:
+        st.markdown(f"### 📂 Bid History for {active_user}")
+        my_bids = get_supplier_bids(active_user)
+        
+        if not my_bids:
+            st.info("You haven't submitted any bids yet.")
+        else:
+            for bid in my_bids:
+                status = bid['status'] # Pending, Accepted, Rejected
+                color = "orange" if status == "Pending" else "green" if status == "Accepted" else "red"
+                
+                with st.container(border=True):
+                    c1, c2 = st.columns([3, 1])
+                    with c1:
+                        st.markdown(f"**Project:** {bid['project_name']}")
+                        st.caption(f"Bid Amount: ₦{bid['amount']:,.0f} | Date: {bid['timestamp']}")
+                    with c2:
+                        st.markdown(f":{color}[**{status}**]")
+
+    # --- REGISTRATION ---
+    with s_tab3:
+        st.markdown("### 📝 Register Business")
+        with st.form("reg_form"):
+            r_name = st.text_input("Company Name")
+            r_loc = st.selectbox("Base Location", ["Lekki, Lagos", "Ibadan, Oyo", "Abuja, FCT"])
+            r_phone = st.text_input("WhatsApp Number")
+            r_email = st.text_input("Email Address")
+            r_items = st.multiselect("Supply Items", ["Cement", "Sharp Sand", "Granite", "Iron Rods", "Blocks"])
+            
+            if st.form_submit_button("✅ Register"):
+                if register_supplier(r_name, r_loc, r_phone, r_email, r_items):
+                    st.success(f"Registered {r_name}!")
+                    st.rerun() # Refresh to update dropdown
+
+# ==========================================
+# 🚧 TAB 4: SITE OPERATIONS (The "Site Manager" View)
+# ==========================================
+elif selected_nav == "🚧 Site Operations":
+    st.title("🚧 Site Execution Manager")
+    
+    # --- DEMO IMPERSONATION ---
+    logger_name = "Site Manager"
+    if st.session_state.get('role') == "Chief Engineer":
+        st.info("👮 **Admin Mode:** Logging site data as 'Site Manager Tunde'.")
+        logger_name = "Site Manager Tunde"
+    # --------------------------
+
+    current_proj = st.session_state.get('current_project_name')
+    if not current_proj: st.error("Please load a project in the 'Planning' tab first.")
     else:
-        st.warning("Create a BOQ to view suppliers.")
+        st.success(f"Managing Site: **{current_proj}**")
+        op_tab1, op_tab2, op_tab3 = st.tabs(["💸 Expense Log", "📦 Inventory", "📅 Daily Diary"])
+        
+        with op_tab1:
+            with st.form("exp_form"):
+                e_item = st.text_input("Item", placeholder="e.g. Diesel")
+                e_amt = st.number_input("Amount", min_value=0)
+                if st.form_submit_button("Log Expense"):
+                    # Use 'logger_name' instead of Admin
+                    log_expense(current_proj, e_item, e_amt, "Misc", f"Logged by {logger_name}")
+                    st.success("Saved to Ledger")
+            df_exp = get_project_expenses(current_proj)
+            if not df_exp.empty: st.dataframe(df_exp, use_container_width=True)
+            
+        with op_tab3: 
+            st.markdown("### 📝 Daily Site Report")
+            w_cond = st.selectbox("Weather", ["Sunny", "Rainy", "Cloudy"])
+            work_done = st.text_area("Work Done Today")
+            if st.button("Submit Report"):
+                log_site_diary(current_proj, w_cond, {}, work_done, "")
+                st.success("Diary Saved")
+            
+            diary_df = get_site_diary(current_proj)
+            if not diary_df.empty:
+                pdf = generate_diary_pdf(current_proj, diary_df)
+                st.download_button("📥 Download PDF Report", pdf, "site_report.pdf", "application/pdf")
