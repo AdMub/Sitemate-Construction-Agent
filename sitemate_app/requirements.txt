@@ -3,3 +3,9 @@ pandas
 altair
 streamlit-lottie
 requests
+python-dotenv
+algoliasearch
+google-generativeai
+fpdf
+streamlit-mic-recorder
+pydantic

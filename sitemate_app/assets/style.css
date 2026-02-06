@@ -1,45 +1,97 @@
-/* assets/style.css */
+/* --- GLOBAL THEME: Slate & Safety Orange --- */
+:root {
+    --primary-color: #FF8C00; /* Safety Orange */
+    --bg-dark: #0E1117;       /* Deepest Black-Blue */
+    --bg-card: #161B22;       /* GitHub Dark Gray (Sidebar) */
+    --bg-hover: #1F242C;      /* Lighter Hover State */
+    --border-color: #30363D;  /* Subtle Borders */
+    --text-primary: #E6EDF3;
+}
 
-/* FORCE DARK MODE BACKGROUND */
+/* 1. APP BACKGROUND */
 .stApp {
-    background-color: #0E1117;
+    background-color: var(--bg-dark);
 }
 
-/* SIDEBAR STYLING - Engineering Look */
-section[data-testid="stSidebar"] {
-    background-color: #1c1e26;
-    border-right: 1px solid #FF8C00; /* Orange border line */
+/* 2. SIDEBAR REDESIGN (The "Not Black" Look) */
+[data-testid="stSidebar"] {
+    background-color: var(--bg-card); /* Lighter than main bg */
+    border-right: 1px solid var(--border-color);
 }
 
-/* DASHBOARD METRICS - Make numbers BIG and ORANGE */
-div[data-testid="stMetricValue"] {
-    font-size: 28px !important;
-    color: #FF8C00 !important;
-    font-weight: 700;
+/* 3. NAVIGATION BUTTONS (The Radio Buttons) */
+/* This transforms the text links into "Cards" */
+div.row-widget.stRadio > div {
+    gap: 12px;
+}
+div.row-widget.stRadio > div > label {
+    background-color: #0d1117; /* Very dark inner */
+    border: 1px solid var(--border-color);
+    padding: 15px;
+    border-radius: 8px;
+    color: #8b949e; /* Dimmed text */
+    transition: all 0.2s ease-in-out;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
 
-/* RUGGED BUTTONS - Rectangular, bold, industrial */
-div.stButton > button {
-    background-color: #FF8C00;
-    color: #000000;
-    border-radius: 4px; /* Slight curve, mostly square */
-    border: none;
+/* Hover Effect */
+div.row-widget.stRadio > div > label:hover {
+    background-color: var(--bg-hover);
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+    cursor: pointer;
+    transform: translateX(5px); /* Slide effect */
+}
+
+/* Active/Selected State */
+div.row-widget.stRadio > div > label[data-baseweb="radio"] {
+    background-color: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+    color: #000000 !important; /* Black text on Orange */
     font-weight: bold;
-    text-transform: uppercase; /* All caps text */
-    letter-spacing: 1px;
-    width: 100%; /* Full width buttons */
+    box-shadow: 0 0 15px rgba(255, 140, 0, 0.3);
 }
 
-/* Button Hover Effect */
-div.stButton > button:hover {
-    background-color: #FFFFFF;
-    color: #FF8C00;
-    border: 2px solid #FF8C00;
-}
-
-/* CHAT BUBBLES - Distinct background for readability */
-.stChatMessage {
-    background-color: #262730;
+/* 4. USER PROFILE CARD (Custom Class) */
+.user-card {
+    background: linear-gradient(135deg, #1f2937, #111827);
+    border: 1px solid #374151;
+    border-left: 5px solid var(--primary-color);
     border-radius: 10px;
-    border: 1px solid #444;
+    padding: 15px;
+    margin-bottom: 20px;
+    color: white;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
 }
+
+/* 5. WEATHER/CONTEXT BOX (Custom Class) */
+.context-card {
+    background-color: #21262d;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid #30363d;
+    margin-top: 10px;
+    color: #c9d1d9;
+    font-size: 0.9em;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* 6. GENERAL BUTTONS */
+button[kind="primary"] {
+    background-color: var(--primary-color) !important;
+    color: white !important;
+    border: none;
+    font-weight: 600;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+button[kind="primary"]:hover {
+    filter: brightness(1.1);
+    transform: translateY(-1px);
+}
+
+/* 7. HIDE STREAMLIT BRANDING */
+#MainMenu {visibility: hidden;}
+footer {visibility: hidden;}
+header {visibility: hidden;}

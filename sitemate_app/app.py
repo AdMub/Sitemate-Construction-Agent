@@ -28,17 +28,18 @@ from logic.feasibility_engine import check_feasibility
 from logic.auth import require_auth, logout 
 
 # --- 3. CUSTOM STYLING ---
-st.markdown("""
-<style>
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    header {visibility: hidden;}
-    [data-testid="stSidebar"] { background-color: #1E1E1E; border-right: 1px solid #333; }
-    .stTabs [data-baseweb="tab-list"] { gap: 24px; }
-    .stTabs [data-baseweb="tab"] { height: 50px; color: #888; }
-    .stTabs [data-baseweb="tab"][aria-selected="true"] { color: #FF8C00; border-bottom: 2px solid #FF8C00; }
-</style>
-""", unsafe_allow_html=True)
+# Try to load the external CSS file first
+try:
+    with open('assets/style.css') as f:
+        st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
+except FileNotFoundError:
+    # Fallback if file is missing (Safety Net)
+    st.markdown("""
+    <style>
+        [data-testid="stSidebar"] { background-color: #1E1E1E; }
+        .stTabs [data-baseweb="tab"][aria-selected="true"] { color: #FF8C00; border-bottom: 2px solid #FF8C00; }
+    </style>
+    """, unsafe_allow_html=True)
 
 init_db()
 
@@ -51,15 +52,18 @@ with st.sidebar:
     st.markdown("### **SiteMate Pro**")
     st.caption("Enterprise OS | v2.3 (Final)")
     
+    # --- IMPROVED USER CARD (Uses .user-card CSS class) ---
     st.markdown(f"""
-    <div style='background-color: #2b313e; padding: 10px; border-radius: 5px; margin-bottom: 20px;'>
-        <small>Logged in as:</small><br>
-        <strong>{st.session_state['user_name']}</strong><br>
-        <span style='color: #00FF00; font-size: 0.8em;'>● Online</span>
+    <div class="user-card">
+        <small style="color: #9ca3af;">Logged in as:</small><br>
+        <strong style="font-size: 1.1em;">{st.session_state['user_name']}</strong><br>
+        <div style="margin-top: 5px;">
+            <span style='color: #4ade80; font-size: 0.8em;'>● Online</span>
+        </div>
     </div>
     """, unsafe_allow_html=True)
 
-    # --- GLOBAL CONTEXT ---
+    # --- IMPROVED CONTEXT SECTION ---
     st.markdown("#### 📍 Context")
     if "last_location" not in st.session_state: st.session_state.last_location = "Lekki, Lagos"
     selected_loc = st.selectbox("Location", ["Lekki, Lagos", "Ibadan, Oyo", "Abuja, FCT"], index=["Lekki, Lagos", "Ibadan, Oyo", "Abuja, FCT"].index(st.session_state.last_location))
@@ -68,12 +72,16 @@ with st.sidebar:
         st.session_state.last_location = selected_loc
         st.rerun()
 
-    # --- WEATHER WIDGET ---
+    # --- IMPROVED WEATHER WIDGET (Uses .context-card CSS class) ---
     weather_data = get_site_weather(selected_loc)
     if weather_data and "error" not in weather_data:
         st.markdown(f"""
-        <div style="background-color: #262730; color: #fff; padding: 10px; border-radius: 8px; border-left: 4px solid #FF8C00; margin-bottom: 15px;">
-            <b>🌤️ Weather:</b> {weather_data['temp']}°C | {weather_data['condition']}
+        <div class="context-card">
+            <span style="font-size: 1.5em;">🌤️</span>
+            <div>
+                <b>{weather_data['temp']}°C</b><br>
+                <span style="color: #8b949e;">{weather_data['condition']}</span>
+            </div>
         </div>
         """, unsafe_allow_html=True)
     
@@ -340,10 +348,16 @@ elif selected_nav == "🛒 Marketplace":
                             # WhatsApp Link
                             st.link_button("📲 Chat", get_whatsapp_link(sup.get('phone', '000'), "Hello, I have a project..."))
                         with c3:
-                            # Email Link
+                            # Email Link (FIXED VISIBILITY)
                             email_link = get_email_link(sup.get('email', 'test@test.com'), selected_loc, "Order Inquiry")
                             if email_link: 
-                                st.markdown(f'<a href="{email_link}" target="_blank" style="text-decoration:none;"><button style="width:100%; padding: 0.5rem; background-color: #f0f2f6; border: 1px solid #ccc; border-radius: 5px;">📧 Send Email</button></a>', unsafe_allow_html=True)
+                                st.markdown(f"""
+                                <a href="{email_link}" target="_blank" style="text-decoration:none;">
+                                    <button style="width:100%; padding: 0.5rem; background-color: #1F242C; color: white; border: 1px solid #30363d; border-radius: 6px; font-weight: bold; cursor: pointer;">
+                                        📧 Send Email
+                                    </button>
+                                </a>
+                                """, unsafe_allow_html=True)
         else:
             st.info("Create a BOQ in the Planning tab to see supplier estimates.")
 
