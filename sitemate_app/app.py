@@ -11,7 +11,7 @@ from streamlit_mic_recorder import mic_recorder
 from logic.transcriber import transcribe_audio
 from logic.oyenuga_logic import get_agent_response
 from logic.data_fetcher import get_live_price, get_suppliers_for_location
-from logic.report_generator import generate_pdf_report, generate_diary_pdf
+from logic.report_generator import generate_pdf_report, generate_diary_pdf, generate_inventory_pdf, generate_expense_pdf
 from logic.integrations import get_whatsapp_link, get_email_link
 from logic.labor_engine import calculate_labor_cost
 from logic.timeline_engine import calculate_project_timeline
@@ -20,7 +20,7 @@ from logic.db_manager import (
     get_bids_for_project, register_supplier, get_open_tenders, submit_bid,
     log_expense, get_project_expenses, update_inventory, get_project_inventory, 
     get_inventory_logs, log_site_diary, get_site_diary, 
-    get_all_supplier_names, update_bid_status, get_supplier_bids # Added new imports
+    get_all_supplier_names, update_bid_status, get_supplier_bids
 )
 from logic.weather_engine import get_site_weather
 from logic.expert_verifier import verify_project_budget 
@@ -435,31 +435,126 @@ elif selected_nav == "🚧 Site Operations":
     # --------------------------
 
     current_proj = st.session_state.get('current_project_name')
-    if not current_proj: st.error("Please load a project in the 'Planning' tab first.")
+    if not current_proj: 
+        st.error("Please load a project in the 'Planning' tab first.")
     else:
         st.success(f"Managing Site: **{current_proj}**")
-        op_tab1, op_tab2, op_tab3 = st.tabs(["💸 Expense Log", "📦 Inventory", "📅 Daily Diary"])
         
+        # Load Data
+        df_exp = get_project_expenses(current_proj)
+        inventory_df = get_project_inventory(current_proj)
+        history_df = get_inventory_logs(current_proj)
+        diary_df = get_site_diary(current_proj)
+
+        op_tab1, op_tab2, op_tab3 = st.tabs(["💸 Expense Log", "📦 Inventory Control", "📅 Daily Diary (DSR)"])
+        
+        # --- SUB-TAB 1: EXPENSES ---
         with op_tab1:
-            with st.form("exp_form"):
-                e_item = st.text_input("Item", placeholder="e.g. Diesel")
-                e_amt = st.number_input("Amount", min_value=0)
-                if st.form_submit_button("Log Expense"):
-                    # Use 'logger_name' instead of Admin
-                    log_expense(current_proj, e_item, e_amt, "Misc", f"Logged by {logger_name}")
-                    st.success("Saved to Ledger")
-            df_exp = get_project_expenses(current_proj)
-            if not df_exp.empty: st.dataframe(df_exp, use_container_width=True)
+            c1, c2 = st.columns([1, 2])
+            with c1:
+                st.markdown("#### Log Expense")
+                with st.form("exp_form"):
+                    e_item = st.text_input("Item", placeholder="e.g. Diesel")
+                    e_amt = st.number_input("Amount (₦)", min_value=0.0, step=1000.0)
+                    e_cat = st.selectbox("Category", ["Materials", "Labor", "Logistics", "Permits", "Misc"])
+                    e_note = st.text_input("Note", placeholder="Receipt #...")
+                    
+                    if st.form_submit_button("💾 Save Expense"):
+                        log_expense(current_proj, e_item, e_amt, e_cat, f"{e_note} (By {logger_name})")
+                        st.success("Saved to Ledger")
+                        st.rerun()
             
-        with op_tab3: 
-            st.markdown("### 📝 Daily Site Report")
-            w_cond = st.selectbox("Weather", ["Sunny", "Rainy", "Cloudy"])
-            work_done = st.text_area("Work Done Today")
-            if st.button("Submit Report"):
-                log_site_diary(current_proj, w_cond, {}, work_done, "")
-                st.success("Diary Saved")
-            
-            diary_df = get_site_diary(current_proj)
-            if not diary_df.empty:
-                pdf = generate_diary_pdf(current_proj, diary_df)
-                st.download_button("📥 Download PDF Report", pdf, "site_report.pdf", "application/pdf")
+            with c2:
+                st.markdown("#### Financial Overview")
+                if not df_exp.empty:
+                    st.dataframe(df_exp, use_container_width=True)
+                    st.metric("Total Spent", f"₦{df_exp['amount'].sum():,.0f}")
+                    
+                    # PDF Export
+                    pdf_bytes = generate_expense_pdf(current_proj, 0, df_exp) # 0 for budget (placeholder)
+                    st.download_button("📥 Download Ledger PDF", pdf_bytes, "expense_log.pdf", "application/pdf")
+                else:
+                    st.info("No expenses logged yet.")
+
+        # --- SUB-TAB 2: INVENTORY (RESTORED) ---
+        with op_tab2:
+            ic1, ic2 = st.columns([1, 2])
+            with ic1:
+                st.markdown("#### Update Stock")
+                with st.form("inv_form"):
+                    inv_item = st.selectbox("Material", ["Cement", "Sand (Tons)", "Granite (Tons)", "Blocks (9 inch)", "Blocks (6 inch)", "Iron Rods (16mm)", "Iron Rods (12mm)"])
+                    inv_qty = st.number_input("Quantity", min_value=0.1, step=1.0)
+                    inv_unit = "Bags" if "Cement" in inv_item else "Pcs" if "Blocks" in inv_item else "Tons"
+                    inv_action = st.radio("Action", ["📥 Stock IN (Delivery)", "📤 Stock OUT (Usage)"])
+                    
+                    if st.form_submit_button("Update Inventory"):
+                        op = 'add' if "IN" in inv_action else 'remove'
+                        success, msg = update_inventory(current_proj, inv_item, inv_qty, inv_unit, op)
+                        if success:
+                            st.success(msg)
+                            st.rerun()
+                        else:
+                            st.error(msg)
+
+            with ic2:
+                st.markdown("#### 📋 Current Stock Level")
+                if not inventory_df.empty:
+                    # Chart
+                    inv_chart = alt.Chart(inventory_df).mark_bar().encode(
+                        x='Quantity', y=alt.Y('Item', sort='-x'), color=alt.value("#27ae60"), tooltip=['Item', 'Quantity', 'Unit']
+                    ).properties(height=300)
+                    st.altair_chart(inv_chart, use_container_width=True)
+                    
+                    # History Log
+                    with st.expander("📜 Transaction History"):
+                        st.dataframe(history_df, use_container_width=True)
+                    
+                    # PDF
+                    inv_pdf = generate_inventory_pdf(current_proj, inventory_df, history_df)
+                    st.download_button("📥 Download Inventory Report", inv_pdf, "inventory.pdf", "application/pdf")
+                else:
+                    st.info("Inventory is empty. Add stock to see charts.")
+
+        # --- SUB-TAB 3: DIARY (RESTORED LABOR INPUTS) ---
+        with op_tab3:
+            dc1, dc2 = st.columns([1, 2])
+            with dc1:
+                st.markdown("#### New Daily Entry")
+                with st.form("diary_form"):
+                    w_cond = st.selectbox("Weather", ["☀️ Sunny", "🌥️ Cloudy", "🌧️ Rainy (Work Stopped)", "⛈️ Stormy"])
+                    
+                    st.markdown("**Labor Force**")
+                    c_mas = st.number_input("Masons", 0, 20, 0)
+                    c_lab = st.number_input("Laborers", 0, 50, 0)
+                    c_iro = st.number_input("Iron Benders", 0, 20, 0)
+                    
+                    st.markdown("**Progress**")
+                    work_done = st.text_area("Work Accomplished")
+                    issues = st.text_area("Issues / Delays")
+                    
+                    if st.form_submit_button("💾 Submit Report"):
+                        workers = {"Mason": c_mas, "Laborer": c_lab, "Iron Bender": c_iro}
+                        log_site_diary(current_proj, w_cond, workers, work_done, issues)
+                        st.success("Diary Saved")
+                        st.rerun()
+
+            with dc2:
+                st.markdown("#### 📜 Site Diary History")
+                if not diary_df.empty:
+                    st.dataframe(
+                        diary_df, 
+                        use_container_width=True, 
+                        hide_index=True,
+                        column_config={
+                            "Date": st.column_config.DateColumn("Date", format="YYYY-MM-DD"),
+                            "Weather": "Condition",
+                            "Labor": "Workers",
+                            "Work Done": "Progress",
+                            "Issues": "Blockers"
+                        }
+                    )
+                    
+                    pdf = generate_diary_pdf(current_proj, diary_df)
+                    st.download_button("📥 Download DSR Report (PDF)", pdf, "site_report.pdf", "application/pdf")
+                else:
+                    st.info("No daily reports submitted yet.")
