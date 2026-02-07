@@ -63,9 +63,9 @@ Built specifically for the **Algolia Agent Studio Challenge**, SiteMate Pro leve
 ### 📸 Screenshots
 
 | **Command Center** | **Procurement Marketplace** |
-|:---:|:---:|
+|:---:|:---:| :---:|
 | ![Command Center](sitemate_app/assets/command_center.png) | ![Marketplace](sitemate_app/assets/marketplace.png) | ![Marketplace](sitemate_app/assets/marketplace.png) |![Site Operation](sitemate_app/assets/site_operation.png) 
-| *Real-time project dashboard* | *Live bidding and supplier analysis* |  *Inventory Control and site operation* |
+| *Real-time project dashboard* | *Live bidding and supplier analysis* | *Inventory Control and site operation* |
 
 > *Note: Application screenshots reside in the `assets/` folder.*
 
