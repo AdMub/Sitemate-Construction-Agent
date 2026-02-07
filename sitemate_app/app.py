@@ -27,8 +27,7 @@ from logic.expert_verifier import verify_project_budget
 from logic.feasibility_engine import check_feasibility 
 from logic.auth import require_auth, logout 
 
-# --- 3. CUSTOM STYLING (EMBEDDED) ---
-# We inject the CSS directly as a string to guarantee it loads on the Cloud
+# --- 3. CUSTOM STYLING (THE UNIVERSAL FIX) ---
 CUSTOM_CSS = """
 /* --- GLOBAL THEME: Slate & Safety Orange --- */
 :root {
@@ -51,32 +50,30 @@ CUSTOM_CSS = """
     border-right: 1px solid var(--border-color);
 }
 
-/* 3. NAVIGATION BUTTONS (The Radio Buttons) */
-div.row-widget.stRadio > div {
+/* 3. NAVIGATION BUTTONS (UNIVERSAL SELECTOR) */
+/* We target the Radio Button container generically */
+[data-testid="stRadio"] > div {
     gap: 12px;
 }
-div.row-widget.stRadio > div > label {
-    background-color: #0d1117;
-    border: 1px solid var(--border-color);
-    padding: 15px;
-    border-radius: 8px;
-    color: #8b949e;
+[data-testid="stRadio"] label {
+    background-color: #0d1117 !important;
+    border: 1px solid var(--border-color) !important;
+    padding: 15px !important;
+    border-radius: 8px !important;
+    color: #8b949e !important;
     transition: all 0.2s ease-in-out;
     box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
-div.row-widget.stRadio > div > label:hover {
-    background-color: var(--bg-hover);
-    border-color: var(--primary-color);
-    color: var(--primary-color);
+[data-testid="stRadio"] label:hover {
+    background-color: var(--bg-hover) !important;
+    border-color: var(--primary-color) !important;
+    color: var(--primary-color) !important;
     cursor: pointer;
     transform: translateX(5px);
 }
-div.row-widget.stRadio > div > label[data-baseweb="radio"] {
-    background-color: var(--primary-color) !important;
-    border-color: var(--primary-color) !important;
-    color: #000000 !important;
-    font-weight: bold;
-    box-shadow: 0 0 15px rgba(255, 140, 0, 0.3);
+/* Active State (Selected Tab) */
+[data-testid="stRadio"] label[data-baseweb="radio"] > div:first-child {
+    background-color: var(--primary-color) !important; 
 }
 
 /* 4. USER PROFILE & CONTEXT CARDS */
@@ -120,27 +117,6 @@ button[kind="primary"]:hover {
 #MainMenu {visibility: hidden;}
 footer {visibility: hidden;}
 header {visibility: hidden;}
-
-/* 7. TAB STYLING */
-.stTabs [data-baseweb="tab-list"] {
-    gap: 10px;
-    background-color: transparent;
-    padding-bottom: 10px;
-    border-bottom: 1px solid #30363d;
-}
-.stTabs [data-baseweb="tab"] {
-    height: 40px;
-    border-radius: 5px;
-    background-color: transparent;
-    color: #8b949e;
-    border: none;
-}
-.stTabs [data-baseweb="tab"][aria-selected="true"] {
-    background-color: #21262d;
-    color: var(--primary-color);
-    border: 1px solid #30363d;
-    font-weight: bold;
-}
 """
 st.markdown(f'<style>{CUSTOM_CSS}</style>', unsafe_allow_html=True)
 
