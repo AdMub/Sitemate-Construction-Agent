@@ -4,6 +4,20 @@ import altair as alt
 import time
 import os
 
+# --- 0. THEME AUTO-FIX (FORCES DARK MODE) ---
+# This script ensures the app ALWAYS loads in Dark Mode, ignoring browser settings.
+if not os.path.exists(".streamlit/config.toml"):
+    os.makedirs(".streamlit", exist_ok=True)
+    with open(".streamlit/config.toml", "w") as f:
+        f.write("""
+[theme]
+base="dark"
+primaryColor="#FF8C00"
+backgroundColor="#0E1117"
+secondaryBackgroundColor="#161B22"
+textColor="#E6EDF3"
+""")
+
 # --- 1. PAGE CONFIG ---
 st.set_page_config(page_title="SiteMate Pro", page_icon="🏗️", layout="wide", initial_sidebar_state="expanded")
 
@@ -28,7 +42,7 @@ from logic.expert_verifier import verify_project_budget
 from logic.feasibility_engine import check_feasibility 
 from logic.auth import require_auth, logout 
 
-# --- 3. CUSTOM STYLING (THE HIGH-CONTRAST FIX) ---
+# --- 3. CUSTOM STYLING (ROBUST DARK MODE) ---
 CUSTOM_CSS = """
 /* --- GLOBAL THEME: Slate & Safety Orange --- */
 :root {
@@ -46,7 +60,7 @@ CUSTOM_CSS = """
     background-color: var(--bg-dark);
 }
 
-/* 2. FORCE TEXT COLORS (The Fix for Faded Text) */
+/* 2. FORCE TEXT COLORS */
 h1, h2, h3, h4, h5, h6, span, div, label, p {
     color: var(--text-primary) !important;
 }
@@ -63,11 +77,10 @@ h1, h2, h3, h4, h5, h6, span, div, label, p {
     border-right: 1px solid var(--border-color);
 }
 
-/* 4. NAVIGATION BUTTONS (The Sidebar Fix) */
+/* 4. NAVIGATION BUTTONS (Sidebar Fix) */
 [data-testid="stRadio"] > div {
     gap: 12px;
 }
-/* The Button Container */
 [data-testid="stRadio"] label {
     background-color: #0d1117 !important;
     border: 1px solid var(--border-color) !important;
@@ -76,25 +89,41 @@ h1, h2, h3, h4, h5, h6, span, div, label, p {
     transition: all 0.2s ease-in-out;
     box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
-/* The Text Inside the Button (FORCE WHITE) */
 [data-testid="stRadio"] label p {
     color: #FFFFFF !important;
     font-weight: 600 !important;
 }
-/* Hover State */
 [data-testid="stRadio"] label:hover {
     background-color: var(--bg-hover) !important;
     border-color: var(--primary-color) !important;
     cursor: pointer;
     transform: translateX(5px);
 }
-/* Active State (Orange Background) */
 [data-testid="stRadio"] label[data-baseweb="radio"] > div:first-child {
     background-color: var(--primary-color) !important; 
     border-color: var(--primary-color) !important;
 }
 
-/* 5. USER PROFILE & CONTEXT CARDS */
+/* 5. INPUT FIELDS (Force Dark Mode for Inputs) */
+/* Text Input, Number Input, Select Box Backgrounds */
+.stTextInput > div > div, 
+.stNumberInput > div > div, 
+.stSelectbox > div > div, 
+.stTextArea > div > div {
+    background-color: #1F242C !important;
+    color: white !important;
+    border-color: #30363D !important;
+}
+/* Input Text Color */
+input, textarea {
+    color: white !important;
+}
+/* Selectbox Dropdown Options */
+ul[data-testid="stSelectboxVirtualDropdown"] {
+    background-color: #161B22 !important;
+}
+
+/* 6. USER PROFILE & CONTEXT CARDS */
 .user-card {
     background: linear-gradient(135deg, #1f2937, #111827);
     border: 1px solid #374151;
@@ -115,7 +144,7 @@ h1, h2, h3, h4, h5, h6, span, div, label, p {
     gap: 10px;
 }
 
-/* 6. BUTTONS & INPUTS */
+/* 7. BUTTONS */
 button[kind="primary"] {
     background-color: var(--primary-color) !important;
     color: white !important;
@@ -127,12 +156,8 @@ button[kind="primary"]:hover {
     filter: brightness(1.1);
     transform: translateY(-1px);
 }
-.stTextInput input {
-    color: black !important;
-    background-color: white !important;
-}
 
-/* 7. HIDE BRANDING */
+/* 8. HIDE BRANDING */
 #MainMenu {visibility: hidden;}
 footer {visibility: hidden;}
 header {visibility: hidden;}
@@ -273,7 +298,7 @@ if selected_nav == "📐 Planning & AI":
             with c1: 
                 steel_var = st.slider("📉 Steel Price Variance", -10, 20, 0, format="%d%%")
             with c2: 
-                # FIX: Added horizontal=True for better layout
+                # Horizontal Layout for Concrete Grade
                 concrete_grade = st.radio("🏗️ Concrete Grade", ["M20 (Standard)", "M25 (Heavy Duty)"], horizontal=True)
 
             if st.button("🔄 Recalculate Budget"):
@@ -294,7 +319,7 @@ if selected_nav == "📐 Planning & AI":
             
             st.divider()
 
-            # 2. RESTORED: GANTT CHART (TIMELINE)
+            # 2. GANTT CHART
             st.subheader("📅 Estimated Project Schedule")
             try:
                 timeline_df = calculate_project_timeline(st.session_state['boq_df'])
@@ -430,7 +455,6 @@ elif selected_nav == "🛒 Marketplace":
                                  st.rerun()
                          elif bid['status'] == 'Accepted':
                              st.success("Accepted!")
-                             # FIX: Paystack Homepage (Safe, no 404)
                              st.link_button("💳 Pay Now", "https://paystack.com", help="Payment Gateway")
                          elif bid['status'] == 'Rejected':
                              st.error("Rejected")
