@@ -36,7 +36,8 @@ CUSTOM_CSS = """
     --bg-card: #161B22;       /* GitHub Dark Gray (Sidebar) */
     --bg-hover: #1F242C;      /* Lighter Hover State */
     --border-color: #30363D;  /* Subtle Borders */
-    --text-primary: #E6EDF3;
+    --text-primary: #FFFFFF;  /* BRIGHT WHITE */
+    --text-secondary: #B0B8C4; /* Light Grey for subtitles */
 }
 
 /* 1. APP BACKGROUND */
@@ -44,14 +45,24 @@ CUSTOM_CSS = """
     background-color: var(--bg-dark);
 }
 
-/* 2. SIDEBAR REDESIGN */
+/* 2. FORCE TEXT COLORS (The Fix for Faded Text) */
+h1, h2, h3, h4, h5, h6, span, div, label, p {
+    color: var(--text-primary) !important;
+}
+.stMarkdown p {
+    color: var(--text-primary) !important;
+}
+[data-testid="stCaptionContainer"] {
+    color: var(--text-secondary) !important;
+}
+
+/* 3. SIDEBAR REDESIGN */
 [data-testid="stSidebar"] {
     background-color: var(--bg-card);
     border-right: 1px solid var(--border-color);
 }
 
-/* 3. NAVIGATION BUTTONS (UNIVERSAL SELECTOR - CLOUD FIX) */
-/* We target the Radio Button container generically using data-testid */
+/* 4. NAVIGATION BUTTONS (UNIVERSAL SELECTOR) */
 [data-testid="stRadio"] > div {
     gap: 12px;
 }
@@ -60,23 +71,27 @@ CUSTOM_CSS = """
     border: 1px solid var(--border-color) !important;
     padding: 15px !important;
     border-radius: 8px !important;
-    color: #8b949e !important;
+    color: #FFFFFF !important;
     transition: all 0.2s ease-in-out;
     box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
 [data-testid="stRadio"] label:hover {
     background-color: var(--bg-hover) !important;
     border-color: var(--primary-color) !important;
-    color: var(--primary-color) !important;
     cursor: pointer;
     transform: translateX(5px);
 }
-/* Active State (Selected Tab) */
+/* Active State */
 [data-testid="stRadio"] label[data-baseweb="radio"] > div:first-child {
     background-color: var(--primary-color) !important; 
+    border-color: var(--primary-color) !important;
+}
+[data-testid="stRadio"] label[data-baseweb="radio"] p {
+    color: #000000 !important;
+    font-weight: bold !important;
 }
 
-/* 4. USER PROFILE & CONTEXT CARDS */
+/* 5. USER PROFILE & CONTEXT CARDS */
 .user-card {
     background: linear-gradient(135deg, #1f2937, #111827);
     border: 1px solid #374151;
@@ -84,7 +99,6 @@ CUSTOM_CSS = """
     border-radius: 10px;
     padding: 15px;
     margin-bottom: 20px;
-    color: white;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
 }
 .context-card {
@@ -93,14 +107,12 @@ CUSTOM_CSS = """
     border-radius: 8px;
     border: 1px solid #30363d;
     margin-top: 10px;
-    color: #c9d1d9;
-    font-size: 0.9em;
     display: flex;
     align-items: center;
     gap: 10px;
 }
 
-/* 5. BUTTONS */
+/* 6. BUTTONS & INPUTS */
 button[kind="primary"] {
     background-color: var(--primary-color) !important;
     color: white !important;
@@ -112,13 +124,12 @@ button[kind="primary"]:hover {
     filter: brightness(1.1);
     transform: translateY(-1px);
 }
+.stTextInput input {
+    color: black !important;
+    background-color: white !important;
+}
 
-/* 6. HIDE STREAMLIT BRANDING */
-#MainMenu {visibility: hidden;}
-footer {visibility: hidden;}
-header {visibility: hidden;}
-
-/* 7. TAB STYLING (KEPT FROM PREVIOUS CODE) */
+/* 7. TAB STYLING */
 .stTabs [data-baseweb="tab-list"] {
     gap: 10px;
     background-color: transparent;
@@ -129,15 +140,20 @@ header {visibility: hidden;}
     height: 40px;
     border-radius: 5px;
     background-color: transparent;
-    color: #8b949e;
+    color: #B0B8C4 !important;
     border: none;
 }
 .stTabs [data-baseweb="tab"][aria-selected="true"] {
     background-color: #21262d;
-    color: var(--primary-color);
+    color: var(--primary-color) !important;
     border: 1px solid #30363d;
     font-weight: bold;
 }
+
+/* 8. HIDE BRANDING */
+#MainMenu {visibility: hidden;}
+footer {visibility: hidden;}
+header {visibility: hidden;}
 """
 st.markdown(f'<style>{CUSTOM_CSS}</style>', unsafe_allow_html=True)
 
@@ -152,7 +168,7 @@ with st.sidebar:
     st.markdown("### **SiteMate Pro**")
     st.caption("Enterprise OS | v1.0")
     
-    # --- IMPROVED USER CARD (Uses .user-card CSS class) ---
+    # --- USER CARD ---
     st.markdown(f"""
     <div class="user-card">
         <small style="color: #9ca3af;">Logged in as:</small><br>
@@ -163,7 +179,7 @@ with st.sidebar:
     </div>
     """, unsafe_allow_html=True)
 
-    # --- IMPROVED CONTEXT SECTION ---
+    # --- CONTEXT SECTION ---
     st.markdown("#### 📍 Context")
     if "last_location" not in st.session_state: st.session_state.last_location = "Lekki, Lagos"
     selected_loc = st.selectbox("Location", ["Lekki, Lagos", "Ibadan, Oyo", "Abuja, FCT"], index=["Lekki, Lagos", "Ibadan, Oyo", "Abuja, FCT"].index(st.session_state.last_location))
@@ -172,7 +188,7 @@ with st.sidebar:
         st.session_state.last_location = selected_loc
         st.rerun()
 
-    # --- IMPROVED WEATHER WIDGET (Uses .context-card CSS class) ---
+    # --- WEATHER WIDGET ---
     weather_data = get_site_weather(selected_loc)
     if weather_data and "error" not in weather_data:
         st.markdown(f"""
@@ -264,16 +280,19 @@ if selected_nav == "📐 Planning & AI":
                             st.success("Saved & Synced to Algolia!")
                         else: st.error(msg)
 
-    # --- RESTORED: WHAT-IF & EXPERT VERIFICATION ---
+    # --- TAB 2: ANALYSIS & SCENARIOS (FIXED GANTT & LAYOUT) ---
     with p_tab2:
         st.subheader("⚡ Risk Analysis & Scenarios")
         
         if 'boq_df' in st.session_state and not st.session_state['boq_df'].empty:
             
-            # 1. WHAT-IF SCENARIOS
+            # 1. WHAT-IF SCENARIOS (FIXED LAYOUT)
             c1, c2 = st.columns(2)
-            with c1: steel_var = st.slider("📉 Steel Price Variance", -10, 20, 0, format="%d%%")
-            with c2: concrete_grade = st.radio("🏗️ Concrete Grade", ["M20 (Standard)", "M25 (Heavy Duty)"])
+            with c1: 
+                steel_var = st.slider("📉 Steel Price Variance", -10, 20, 0, format="%d%%")
+            with c2: 
+                # FIX: Added horizontal=True so it aligns better
+                concrete_grade = st.radio("🏗️ Concrete Grade", ["M20 (Standard)", "M25 (Heavy Duty)"], horizontal=True)
 
             if st.button("🔄 Recalculate Budget"):
                 target_items = st.session_state['active_boq']
@@ -293,7 +312,25 @@ if selected_nav == "📐 Planning & AI":
             
             st.divider()
 
-            # 2. RESTORED: EXPERT VERIFICATION SERVICE
+            # 2. RESTORED: GANTT CHART (TIMELINE)
+            st.subheader("📅 Estimated Project Schedule")
+            try:
+                timeline_df = calculate_project_timeline(st.session_state['boq_df'])
+                if not timeline_df.empty:
+                    chart = alt.Chart(timeline_df).mark_bar().encode(
+                        x=alt.X('Start', title='Start Date'),
+                        x2='End',
+                        y=alt.Y('Task', sort=None, title='Construction Phase'),
+                        color=alt.Color('Phase', legend=alt.Legend(title="Phase Type")),
+                        tooltip=['Task', 'Start', 'End', 'Duration (Days)']
+                    ).properties(height=300)
+                    st.altair_chart(chart, use_container_width=True)
+            except Exception as e:
+                st.info("Timeline generation pending project details.")
+
+            st.divider()
+
+            # 3. EXPERT VERIFICATION
             with st.expander("🛡️ Expert Verification Service (Senior QS)", expanded=False):
                 st.info("Have a Senior QS AI audit your budget before sending it to a bank.")
                 if st.button("🔍 Verify My Budget"):
@@ -307,7 +344,7 @@ if selected_nav == "📐 Planning & AI":
     with p_tab3:
         st.subheader("📂 Project Management & Reports")
         
-        # 1. PROJECT LOADER (LOAD / DELETE)
+        # 1. PROJECT LOADER
         projects = get_all_projects()
         if projects:
             proj_list = [p[0] for p in projects]
@@ -325,7 +362,6 @@ if selected_nav == "📐 Planning & AI":
                         time.sleep(1)
                         st.rerun()
             with c3:
-                # --- NEW DELETE BUTTON ---
                 if st.button("❌ Delete", type="primary"):
                     delete_project(sel_proj)
                     if st.session_state.get('current_project_name') == sel_proj:
@@ -403,39 +439,34 @@ elif selected_nav == "🛒 Marketplace":
                         st.caption(f"Status: **{bid['status']}**")
                     
                     with c3:
-                         # ACCEPT / REJECT LOGIC
                          if bid['status'] == 'Pending':
                              if st.button("✅ Accept", key=f"acc_{bid['id']}"):
                                  update_bid_status(bid['id'], "Accepted")
                                  st.rerun()
-                             
                              if st.button("❌ Reject", key=f"rej_{bid['id']}"):
                                  update_bid_status(bid['id'], "Rejected")
                                  st.rerun()
-                         
                          elif bid['status'] == 'Accepted':
                              st.success("Accepted!")
-                             st.link_button("💳 Pay Now", "https://paystack.com/pay/sitemate-demo")
-                         
+                             # FIX: Added a working generic Paystack URL so it doesn't crash
+                             st.link_button("💳 Pay Now", "https://paystack.com", help="Connect your actual Paystack payment page here.")
                          elif bid['status'] == 'Rejected':
                              st.error("Rejected")
 
         st.divider()
 
-        # --- SECTION 2: STANDARD SUPPLIERS (RESTORED) ---
+        # --- SECTION 2: STANDARD SUPPLIERS ---
         st.markdown("### 📚 Standard Suppliers Directory")
         st.caption("Contact registered suppliers directly if you don't want to wait for bids.")
         
-        # Logic: If we have a BOQ, show estimated quotes from standard suppliers
         if 'boq_df' in st.session_state and not st.session_state['boq_df'].empty:
             base_total = st.session_state['boq_df']['Total Cost'].sum()
-            suppliers = get_suppliers_for_location(selected_loc) # Fetches from DB
+            suppliers = get_suppliers_for_location(selected_loc)
             
             if not suppliers:
                 st.warning("No suppliers registered in this location yet.")
             else:
                 for sup in suppliers:
-                    # Simple logic: Supplier Quote = Base Cost * Markup (e.g. 1.1)
                     supplier_total = base_total * sup.get('markup', 1.05)
                     
                     with st.container(border=True):
@@ -445,10 +476,8 @@ elif selected_nav == "🛒 Marketplace":
                             st.caption(f"⭐ {sup.get('rating', 'New')} | 📍 {selected_loc}")
                             st.write(f"**Est. Quote:** ₦{supplier_total:,.0f}")
                         with c2:
-                            # WhatsApp Link
                             st.link_button("📲 Chat", get_whatsapp_link(sup.get('phone', '000'), "Hello, I have a project..."))
                         with c3:
-                            # Email Link - FIXED USING NATIVE COMPONENT
                             email_link = get_email_link(sup.get('email', 'test@test.com'), selected_loc, "Order Inquiry")
                             if email_link: 
                                 st.link_button("📧 Send Email", email_link, use_container_width=True)
@@ -461,20 +490,15 @@ elif selected_nav == "🛒 Marketplace":
 elif selected_nav == "🚚 Supplier Portal":
     st.title("🚚 Supplier Portal")
     
-    # --- 1. DEMO IMPERSONATION (DROPDOWN FIXED) ---
     active_user = st.session_state['user_name']
     
     if st.session_state.get('role') == "Chief Engineer":
         st.info("👮 **Admin Mode:** You are impersonating a supplier.")
-        
-        # FETCH REGISTERED SUPPLIERS FOR DROPDOWN
         registered_suppliers = get_all_supplier_names()
         active_user = st.selectbox("Simulate As:", registered_suppliers)
-    # ---------------------------------------------
     
     s_tab1, s_tab2, s_tab3 = st.tabs(["💰 Job Board", "📂 My Bids (Status)", "📝 New Registration"])
     
-    # --- JOB BOARD ---
     with s_tab1:
         st.markdown(f"### 🔍 Live Tenders (Viewing as: {active_user})")
         tenders = get_open_tenders(selected_loc)
@@ -494,7 +518,6 @@ elif selected_nav == "🚚 Supplier Portal":
                                 st.success(f"Bid Sent as '{active_user}'!")
                             else: st.error("Error submitting bid.")
 
-    # --- NEW: MY BIDS (TRACKING) ---
     with s_tab2:
         st.markdown(f"### 📂 Bid History for {active_user}")
         my_bids = get_supplier_bids(active_user)
@@ -503,7 +526,7 @@ elif selected_nav == "🚚 Supplier Portal":
             st.info("You haven't submitted any bids yet.")
         else:
             for bid in my_bids:
-                status = bid['status'] # Pending, Accepted, Rejected
+                status = bid['status'] 
                 color = "orange" if status == "Pending" else "green" if status == "Accepted" else "red"
                 
                 with st.container(border=True):
@@ -514,7 +537,6 @@ elif selected_nav == "🚚 Supplier Portal":
                     with c2:
                         st.markdown(f":{color}[**{status}**]")
 
-    # --- REGISTRATION ---
     with s_tab3:
         st.markdown("### 📝 Register Business")
         with st.form("reg_form"):
@@ -527,7 +549,7 @@ elif selected_nav == "🚚 Supplier Portal":
             if st.form_submit_button("✅ Register"):
                 if register_supplier(r_name, r_loc, r_phone, r_email, r_items):
                     st.success(f"Registered {r_name}!")
-                    st.rerun() # Refresh to update dropdown
+                    st.rerun()
 
 # ==========================================
 # 🚧 TAB 4: SITE OPERATIONS (The "Site Manager" View)
@@ -535,12 +557,10 @@ elif selected_nav == "🚚 Supplier Portal":
 elif selected_nav == "🚧 Site Operations":
     st.title("🚧 Site Execution Manager")
     
-    # --- DEMO IMPERSONATION ---
     logger_name = "Site Manager"
     if st.session_state.get('role') == "Chief Engineer":
         st.info("👮 **Admin Mode:** Logging site data as 'Site Manager Tunde'.")
         logger_name = "Site Manager Tunde"
-    # --------------------------
 
     current_proj = st.session_state.get('current_project_name')
     if not current_proj: 
@@ -548,7 +568,6 @@ elif selected_nav == "🚧 Site Operations":
     else:
         st.success(f"Managing Site: **{current_proj}**")
         
-        # Load Data
         df_exp = get_project_expenses(current_proj)
         inventory_df = get_project_inventory(current_proj)
         history_df = get_inventory_logs(current_proj)
@@ -556,7 +575,6 @@ elif selected_nav == "🚧 Site Operations":
 
         op_tab1, op_tab2, op_tab3 = st.tabs(["💸 Expense Log", "📦 Inventory Control", "📅 Daily Diary (DSR)"])
         
-        # --- SUB-TAB 1: EXPENSES ---
         with op_tab1:
             c1, c2 = st.columns([1, 2])
             with c1:
@@ -577,14 +595,11 @@ elif selected_nav == "🚧 Site Operations":
                 if not df_exp.empty:
                     st.dataframe(df_exp, use_container_width=True)
                     st.metric("Total Spent", f"₦{df_exp['amount'].sum():,.0f}")
-                    
-                    # PDF Export
-                    pdf_bytes = generate_expense_pdf(current_proj, 0, df_exp) # 0 for budget (placeholder)
+                    pdf_bytes = generate_expense_pdf(current_proj, 0, df_exp)
                     st.download_button("📥 Download Ledger PDF", pdf_bytes, "expense_log.pdf", "application/pdf")
                 else:
                     st.info("No expenses logged yet.")
 
-        # --- SUB-TAB 2: INVENTORY (RESTORED) ---
         with op_tab2:
             ic1, ic2 = st.columns([1, 2])
             with ic1:
@@ -607,23 +622,19 @@ elif selected_nav == "🚧 Site Operations":
             with ic2:
                 st.markdown("#### 📋 Current Stock Level")
                 if not inventory_df.empty:
-                    # Chart
                     inv_chart = alt.Chart(inventory_df).mark_bar().encode(
                         x='Quantity', y=alt.Y('Item', sort='-x'), color=alt.value("#27ae60"), tooltip=['Item', 'Quantity', 'Unit']
                     ).properties(height=300)
                     st.altair_chart(inv_chart, use_container_width=True)
                     
-                    # History Log
                     with st.expander("📜 Transaction History"):
                         st.dataframe(history_df, use_container_width=True)
                     
-                    # PDF
                     inv_pdf = generate_inventory_pdf(current_proj, inventory_df, history_df)
                     st.download_button("📥 Download Inventory Report", inv_pdf, "inventory.pdf", "application/pdf")
                 else:
                     st.info("Inventory is empty. Add stock to see charts.")
 
-        # --- SUB-TAB 3: DIARY (RESTORED LABOR INPUTS) ---
         with op_tab3:
             dc1, dc2 = st.columns([1, 2])
             with dc1:
@@ -661,7 +672,6 @@ elif selected_nav == "🚧 Site Operations":
                             "Issues": "Blockers"
                         }
                     )
-                    
                     pdf = generate_diary_pdf(current_proj, diary_df)
                     st.download_button("📥 Download DSR Report (PDF)", pdf, "site_report.pdf", "application/pdf")
                 else:
