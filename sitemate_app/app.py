@@ -27,27 +27,123 @@ from logic.expert_verifier import verify_project_budget
 from logic.feasibility_engine import check_feasibility 
 from logic.auth import require_auth, logout 
 
-# --- 3. CUSTOM STYLING ---
-import os
+# --- 3. CUSTOM STYLING (THE NUCLEAR FIX) ---
+# We inject the CSS directly as a string to avoid file path issues on Cloud
+CUSTOM_CSS = """
+/* --- GLOBAL THEME: Slate & Safety Orange --- */
+:root {
+    --primary-color: #FF8C00; /* Safety Orange */
+    --bg-dark: #0E1117;       /* Deepest Black-Blue */
+    --bg-card: #161B22;       /* GitHub Dark Gray (Sidebar) */
+    --bg-hover: #1F242C;      /* Lighter Hover State */
+    --border-color: #30363D;  /* Subtle Borders */
+    --text-primary: #E6EDF3;
+}
 
-# Get the absolute path of the current file (app.py)
-current_dir = os.path.dirname(os.path.abspath(__file__))
-# Construct the path to the CSS file
-css_path = os.path.join(current_dir, 'assets', 'style.css')
+/* 1. APP BACKGROUND */
+.stApp {
+    background-color: var(--bg-dark);
+}
 
-try:
-    with open(css_path) as f:
-        st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
-except FileNotFoundError:
-    # This will now clearly tell us if the file is missing instead of failing silently
-    st.error(f"⚠️ CSS File not found. Looked at: {css_path}")
-    # Fallback if file is missing (Safety Net)
-    st.markdown("""
-    <style>
-        [data-testid="stSidebar"] { background-color: #1E1E1E; }
-        .stTabs [data-baseweb="tab"][aria-selected="true"] { color: #FF8C00; border-bottom: 2px solid #FF8C00; }
-    </style>
-    """, unsafe_allow_html=True)
+/* 2. SIDEBAR REDESIGN */
+[data-testid="stSidebar"] {
+    background-color: var(--bg-card);
+    border-right: 1px solid var(--border-color);
+}
+
+/* 3. NAVIGATION BUTTONS (The Radio Buttons) */
+div.row-widget.stRadio > div {
+    gap: 12px;
+}
+div.row-widget.stRadio > div > label {
+    background-color: #0d1117;
+    border: 1px solid var(--border-color);
+    padding: 15px;
+    border-radius: 8px;
+    color: #8b949e;
+    transition: all 0.2s ease-in-out;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+div.row-widget.stRadio > div > label:hover {
+    background-color: var(--bg-hover);
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+    cursor: pointer;
+    transform: translateX(5px);
+}
+div.row-widget.stRadio > div > label[data-baseweb="radio"] {
+    background-color: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+    color: #000000 !important;
+    font-weight: bold;
+    box-shadow: 0 0 15px rgba(255, 140, 0, 0.3);
+}
+
+/* 4. USER PROFILE & CONTEXT CARDS */
+.user-card {
+    background: linear-gradient(135deg, #1f2937, #111827);
+    border: 1px solid #374151;
+    border-left: 5px solid var(--primary-color);
+    border-radius: 10px;
+    padding: 15px;
+    margin-bottom: 20px;
+    color: white;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+.context-card {
+    background-color: #21262d;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid #30363d;
+    margin-top: 10px;
+    color: #c9d1d9;
+    font-size: 0.9em;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* 5. BUTTONS */
+button[kind="primary"] {
+    background-color: var(--primary-color) !important;
+    color: white !important;
+    border: none;
+    font-weight: 600;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+button[kind="primary"]:hover {
+    filter: brightness(1.1);
+    transform: translateY(-1px);
+}
+
+/* 6. HIDE STREAMLIT BRANDING */
+#MainMenu {visibility: hidden;}
+footer {visibility: hidden;}
+header {visibility: hidden;}
+
+/* 7. TAB STYLING */
+.stTabs [data-baseweb="tab-list"] {
+    gap: 10px;
+    background-color: transparent;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #30363d;
+}
+.stTabs [data-baseweb="tab"] {
+    height: 40px;
+    border-radius: 5px;
+    background-color: transparent;
+    color: #8b949e;
+    border: none;
+}
+.stTabs [data-baseweb="tab"][aria-selected="true"] {
+    background-color: #21262d;
+    color: var(--primary-color);
+    border: 1px solid #30363d;
+    font-weight: bold;
+}
+"""
+
+st.markdown(f'<style>{CUSTOM_CSS}</style>', unsafe_allow_html=True)
 
 init_db()
 
