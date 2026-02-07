@@ -10,3 +10,4 @@ fpdf
 streamlit-mic-recorder
 pydantic
 groq
+matplotlib
