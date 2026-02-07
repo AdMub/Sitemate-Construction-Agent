@@ -4,7 +4,7 @@ altair
 streamlit-lottie
 requests
 python-dotenv
-algoliasearch ==2.6.3
+algoliasearch==2.6.3
 google-generativeai
 fpdf
 streamlit-mic-recorder
