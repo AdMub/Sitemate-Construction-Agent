@@ -5,7 +5,7 @@ import time
 import os
 
 # --- 0. THEME AUTO-FIX (FORCES DARK MODE) ---
-# This script ensures the app ALWAYS loads in Dark Mode, ignoring browser settings.
+# This ensures the app ALWAYS loads in Dark Mode on the Cloud.
 if not os.path.exists(".streamlit/config.toml"):
     os.makedirs(".streamlit", exist_ok=True)
     with open(".streamlit/config.toml", "w") as f:
@@ -16,6 +16,7 @@ primaryColor="#FF8C00"
 backgroundColor="#0E1117"
 secondaryBackgroundColor="#161B22"
 textColor="#E6EDF3"
+font="sans serif"
 """)
 
 # --- 1. PAGE CONFIG ---
@@ -42,125 +43,106 @@ from logic.expert_verifier import verify_project_budget
 from logic.feasibility_engine import check_feasibility 
 from logic.auth import require_auth, logout 
 
-# --- 3. CUSTOM STYLING (ROBUST DARK MODE) ---
+# --- 3. CUSTOM STYLING (THE AGGRESSIVE FIX) ---
 CUSTOM_CSS = """
-/* --- GLOBAL THEME: Slate & Safety Orange --- */
+/* --- GLOBAL THEME --- */
 :root {
-    --primary-color: #FF8C00; /* Safety Orange */
-    --bg-dark: #0E1117;       /* Deepest Black-Blue */
-    --bg-card: #161B22;       /* GitHub Dark Gray (Sidebar) */
-    --bg-hover: #1F242C;      /* Lighter Hover State */
-    --border-color: #30363D;  /* Subtle Borders */
-    --text-primary: #FFFFFF;  /* BRIGHT WHITE */
-    --text-secondary: #B0B8C4; /* Light Grey for subtitles */
+    --primary-color: #FF8C00; 
+    --bg-dark: #0E1117; 
+    --bg-card: #161B22; 
+    --text-white: #FFFFFF;
 }
 
-/* 1. APP BACKGROUND */
-.stApp {
-    background-color: var(--bg-dark);
-}
+/* 1. FORCE BACKGROUNDS */
+.stApp { background-color: var(--bg-dark); }
+[data-testid="stSidebar"] { background-color: var(--bg-card); border-right: 1px solid #30363D; }
 
-/* 2. FORCE TEXT COLORS */
-h1, h2, h3, h4, h5, h6, span, div, label, p {
-    color: var(--text-primary) !important;
-}
-.stMarkdown p {
-    color: var(--text-primary) !important;
-}
-[data-testid="stCaptionContainer"] {
-    color: var(--text-secondary) !important;
-}
+/* 2. FORCE TEXT COLORS (Global White) */
+h1, h2, h3, h4, h5, h6, p, label, span, div { color: var(--text-white) !important; }
 
-/* 3. SIDEBAR REDESIGN */
-[data-testid="stSidebar"] {
-    background-color: var(--bg-card);
-    border-right: 1px solid var(--border-color);
-}
-
-/* 4. NAVIGATION BUTTONS (Sidebar Fix) */
-[data-testid="stRadio"] > div {
-    gap: 12px;
-}
+/* 3. SIDEBAR NAVIGATION BUTTONS (Aggressive Override) */
+[data-testid="stRadio"] > div { gap: 10px; }
 [data-testid="stRadio"] label {
     background-color: #0d1117 !important;
-    border: 1px solid var(--border-color) !important;
-    padding: 15px !important;
+    color: #FFFFFF !important; /* Force White Text */
+    border: 1px solid #30363D !important;
+    padding: 12px !important;
     border-radius: 8px !important;
-    transition: all 0.2s ease-in-out;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
-[data-testid="stRadio"] label p {
-    color: #FFFFFF !important;
-    font-weight: 600 !important;
-}
+/* Hover State */
 [data-testid="stRadio"] label:hover {
-    background-color: var(--bg-hover) !important;
-    border-color: var(--primary-color) !important;
+    border-color: #FF8C00 !important;
     cursor: pointer;
-    transform: translateX(5px);
 }
+/* Selected State */
 [data-testid="stRadio"] label[data-baseweb="radio"] > div:first-child {
-    background-color: var(--primary-color) !important; 
-    border-color: var(--primary-color) !important;
+    background-color: #FF8C00 !important;
+    border-color: #FF8C00 !important;
+}
+/* Selected Text Color (Black for contrast on Orange) */
+[data-testid="stRadio"] label[data-baseweb="radio"] p {
+    color: #000000 !important;
+    font-weight: 800 !important;
 }
 
-/* 5. INPUT FIELDS (Force Dark Mode for Inputs) */
-/* Text Input, Number Input, Select Box Backgrounds */
-.stTextInput > div > div, 
-.stNumberInput > div > div, 
-.stSelectbox > div > div, 
-.stTextArea > div > div {
+/* 4. FIX WHITE BOXES (Selectbox & Inputs) */
+/* This targets the internal React component to force dark mode */
+div[data-baseweb="select"] > div, 
+div[data-baseweb="input"] > div {
     background-color: #1F242C !important;
     color: white !important;
     border-color: #30363D !important;
 }
-/* Input Text Color */
-input, textarea {
-    color: white !important;
-}
-/* Selectbox Dropdown Options */
-ul[data-testid="stSelectboxVirtualDropdown"] {
+/* Fix the dropdown popover menu */
+div[data-baseweb="popover"], div[data-baseweb="menu"] {
     background-color: #161B22 !important;
 }
+/* Ensure text inside selectbox is white */
+div[data-baseweb="select"] span {
+    color: white !important;
+}
+/* Ensure placeholder text is visible */
+input::placeholder {
+    color: #B0B8C4 !important;
+}
+input {
+    color: white !important;
+}
 
-/* 6. USER PROFILE & CONTEXT CARDS */
+/* 5. USER CARD & WIDGETS */
 .user-card {
     background: linear-gradient(135deg, #1f2937, #111827);
     border: 1px solid #374151;
-    border-left: 5px solid var(--primary-color);
+    border-left: 5px solid #FF8C00;
     border-radius: 10px;
     padding: 15px;
     margin-bottom: 20px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
 }
 .context-card {
     background-color: #21262d;
     padding: 12px;
     border-radius: 8px;
     border: 1px solid #30363d;
-    margin-top: 10px;
     display: flex;
     align-items: center;
     gap: 10px;
 }
 
-/* 7. BUTTONS */
+/* 6. BUTTONS */
 button[kind="primary"] {
-    background-color: var(--primary-color) !important;
+    background-color: #FF8C00 !important;
     color: white !important;
     border: none;
-    font-weight: 600;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    font-weight: bold;
 }
-button[kind="primary"]:hover {
-    filter: brightness(1.1);
-    transform: translateY(-1px);
+button[kind="secondary"] {
+    background-color: #21262D !important;
+    color: white !important;
+    border: 1px solid #30363D !important;
 }
 
-/* 8. HIDE BRANDING */
-#MainMenu {visibility: hidden;}
-footer {visibility: hidden;}
-header {visibility: hidden;}
+/* 7. HIDE BRANDING */
+#MainMenu, footer, header {visibility: hidden;}
 """
 st.markdown(f'<style>{CUSTOM_CSS}</style>', unsafe_allow_html=True)
 
@@ -298,7 +280,6 @@ if selected_nav == "📐 Planning & AI":
             with c1: 
                 steel_var = st.slider("📉 Steel Price Variance", -10, 20, 0, format="%d%%")
             with c2: 
-                # Horizontal Layout for Concrete Grade
                 concrete_grade = st.radio("🏗️ Concrete Grade", ["M20 (Standard)", "M25 (Heavy Duty)"], horizontal=True)
 
             if st.button("🔄 Recalculate Budget"):
@@ -433,18 +414,14 @@ elif selected_nav == "🛒 Marketplace":
                     c1, c2, c3 = st.columns([2, 2, 1])
                     with c1:
                         st.markdown(f"### 🏭 {bid['supplier_name']}")
-                        
-                        # AI JUDGMENT
                         if est_total > 0:
                             diff = ((bid['amount'] - est_total) / est_total) * 100
                             if abs(diff) <= 10: st.success(f"✅ Fair Price (Within {diff:.1f}% of AI Estimate)")
                             elif diff > 10: st.warning(f"⚠️ High Bid (+{diff:.1f}%)")
                             else: st.warning(f"📉 Suspiciously Low ({diff:.1f}%)")
-                            
                     with c2:
                         st.metric("Bid Amount", f"₦{bid['amount']:,.0f}")
                         st.caption(f"Status: **{bid['status']}**")
-                    
                     with c3:
                          if bid['status'] == 'Pending':
                              if st.button("✅ Accept", key=f"acc_{bid['id']}"):
@@ -474,7 +451,6 @@ elif selected_nav == "🛒 Marketplace":
             else:
                 for sup in suppliers:
                     supplier_total = base_total * sup.get('markup', 1.05)
-                    
                     with st.container(border=True):
                         c1, c2, c3 = st.columns([3, 1, 2])
                         with c1:
