@@ -27,8 +27,8 @@ from logic.expert_verifier import verify_project_budget
 from logic.feasibility_engine import check_feasibility 
 from logic.auth import require_auth, logout 
 
-# --- 3. CUSTOM STYLING (THE NUCLEAR FIX) ---
-# We inject the CSS directly as a string to avoid file path issues on Cloud
+# --- 3. CUSTOM STYLING (EMBEDDED) ---
+# We inject the CSS directly as a string to guarantee it loads on the Cloud
 CUSTOM_CSS = """
 /* --- GLOBAL THEME: Slate & Safety Orange --- */
 :root {
@@ -142,7 +142,6 @@ header {visibility: hidden;}
     font-weight: bold;
 }
 """
-
 st.markdown(f'<style>{CUSTOM_CSS}</style>', unsafe_allow_html=True)
 
 init_db()
@@ -452,7 +451,7 @@ elif selected_nav == "🛒 Marketplace":
                             # WhatsApp Link
                             st.link_button("📲 Chat", get_whatsapp_link(sup.get('phone', '000'), "Hello, I have a project..."))
                         with c3:
-                            # Email Link - Using Native Streamlit Component
+                            # Email Link - FIXED USING NATIVE COMPONENT
                             email_link = get_email_link(sup.get('email', 'test@test.com'), selected_loc, "Order Inquiry")
                             if email_link: 
                                 st.link_button("📧 Send Email", email_link, use_container_width=True)
