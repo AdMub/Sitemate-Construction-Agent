@@ -27,7 +27,7 @@ from logic.expert_verifier import verify_project_budget
 from logic.feasibility_engine import check_feasibility 
 from logic.auth import require_auth, logout 
 
-# --- 3. CUSTOM STYLING (THE HIGH-CONTRAST FIX) ---
+# --- 3. CUSTOM STYLING (THE UNIVERSAL FIX) ---
 CUSTOM_CSS = """
 /* --- GLOBAL THEME: Slate & Safety Orange --- */
 :root {
@@ -36,8 +36,7 @@ CUSTOM_CSS = """
     --bg-card: #161B22;       /* GitHub Dark Gray (Sidebar) */
     --bg-hover: #1F242C;      /* Lighter Hover State */
     --border-color: #30363D;  /* Subtle Borders */
-    --text-primary: #FFFFFF;  /* BRIGHT WHITE */
-    --text-secondary: #B0B8C4; /* Light Grey for subtitles */
+    --text-primary: #E6EDF3;
 }
 
 /* 1. APP BACKGROUND */
@@ -45,25 +44,14 @@ CUSTOM_CSS = """
     background-color: var(--bg-dark);
 }
 
-/* 2. FORCE TEXT COLORS (The Fix for Faded Text) */
-h1, h2, h3, h4, h5, h6, span, div, label, p {
-    color: var(--text-primary) !important;
-}
-.stMarkdown p {
-    color: var(--text-primary) !important;
-}
-/* Exception: Muted text for captions should be slightly softer, not invisible */
-[data-testid="stCaptionContainer"] {
-    color: var(--text-secondary) !important;
-}
-
-/* 3. SIDEBAR REDESIGN */
+/* 2. SIDEBAR REDESIGN */
 [data-testid="stSidebar"] {
     background-color: var(--bg-card);
     border-right: 1px solid var(--border-color);
 }
 
-/* 4. NAVIGATION BUTTONS (UNIVERSAL SELECTOR) */
+/* 3. NAVIGATION BUTTONS (UNIVERSAL SELECTOR - CLOUD FIX) */
+/* We target the Radio Button container generically using data-testid */
 [data-testid="stRadio"] > div {
     gap: 12px;
 }
@@ -72,28 +60,23 @@ h1, h2, h3, h4, h5, h6, span, div, label, p {
     border: 1px solid var(--border-color) !important;
     padding: 15px !important;
     border-radius: 8px !important;
-    color: #FFFFFF !important; /* Force White Text on Buttons */
+    color: #8b949e !important;
     transition: all 0.2s ease-in-out;
     box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
 [data-testid="stRadio"] label:hover {
     background-color: var(--bg-hover) !important;
     border-color: var(--primary-color) !important;
+    color: var(--primary-color) !important;
     cursor: pointer;
     transform: translateX(5px);
 }
 /* Active State (Selected Tab) */
 [data-testid="stRadio"] label[data-baseweb="radio"] > div:first-child {
     background-color: var(--primary-color) !important; 
-    border-color: var(--primary-color) !important;
-}
-/* Active Text Color */
-[data-testid="stRadio"] label[data-baseweb="radio"] p {
-    color: #000000 !important; /* Black text on Orange background for readability */
-    font-weight: bold !important;
 }
 
-/* 5. USER PROFILE & CONTEXT CARDS */
+/* 4. USER PROFILE & CONTEXT CARDS */
 .user-card {
     background: linear-gradient(135deg, #1f2937, #111827);
     border: 1px solid #374151;
@@ -101,6 +84,7 @@ h1, h2, h3, h4, h5, h6, span, div, label, p {
     border-radius: 10px;
     padding: 15px;
     margin-bottom: 20px;
+    color: white;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
 }
 .context-card {
@@ -109,13 +93,14 @@ h1, h2, h3, h4, h5, h6, span, div, label, p {
     border-radius: 8px;
     border: 1px solid #30363d;
     margin-top: 10px;
+    color: #c9d1d9;
+    font-size: 0.9em;
     display: flex;
     align-items: center;
     gap: 10px;
 }
 
-/* 6. BUTTONS & INPUTS */
-/* Primary Buttons */
+/* 5. BUTTONS */
 button[kind="primary"] {
     background-color: var(--primary-color) !important;
     color: white !important;
@@ -127,13 +112,13 @@ button[kind="primary"]:hover {
     filter: brightness(1.1);
     transform: translateY(-1px);
 }
-/* Input Fields Background */
-.stTextInput input {
-    color: black !important; /* Input text color */
-    background-color: white !important; /* Input box background */
-}
 
-/* 7. TAB STYLING */
+/* 6. HIDE STREAMLIT BRANDING */
+#MainMenu {visibility: hidden;}
+footer {visibility: hidden;}
+header {visibility: hidden;}
+
+/* 7. TAB STYLING (KEPT FROM PREVIOUS CODE) */
 .stTabs [data-baseweb="tab-list"] {
     gap: 10px;
     background-color: transparent;
@@ -144,20 +129,15 @@ button[kind="primary"]:hover {
     height: 40px;
     border-radius: 5px;
     background-color: transparent;
-    color: #B0B8C4 !important; /* Unselected Tab Text */
+    color: #8b949e;
     border: none;
 }
 .stTabs [data-baseweb="tab"][aria-selected="true"] {
     background-color: #21262d;
-    color: var(--primary-color) !important; /* Selected Tab Orange */
+    color: var(--primary-color);
     border: 1px solid #30363d;
     font-weight: bold;
 }
-
-/* 8. HIDE STREAMLIT BRANDING */
-#MainMenu {visibility: hidden;}
-footer {visibility: hidden;}
-header {visibility: hidden;}
 """
 st.markdown(f'<style>{CUSTOM_CSS}</style>', unsafe_allow_html=True)
 
