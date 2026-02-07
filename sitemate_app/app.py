@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import altair as alt
 import time
+import os
 
 # --- 1. PAGE CONFIG ---
 st.set_page_config(page_title="SiteMate Pro", page_icon="🏗️", layout="wide", initial_sidebar_state="expanded")
@@ -27,7 +28,7 @@ from logic.expert_verifier import verify_project_budget
 from logic.feasibility_engine import check_feasibility 
 from logic.auth import require_auth, logout 
 
-# --- 3. CUSTOM STYLING (THE UNIVERSAL FIX) ---
+# --- 3. CUSTOM STYLING (THE HIGH-CONTRAST FIX) ---
 CUSTOM_CSS = """
 /* --- GLOBAL THEME: Slate & Safety Orange --- */
 :root {
@@ -62,33 +63,35 @@ h1, h2, h3, h4, h5, h6, span, div, label, p {
     border-right: 1px solid var(--border-color);
 }
 
-/* 4. NAVIGATION BUTTONS (UNIVERSAL SELECTOR) */
+/* 4. NAVIGATION BUTTONS (The Sidebar Fix) */
 [data-testid="stRadio"] > div {
     gap: 12px;
 }
+/* The Button Container */
 [data-testid="stRadio"] label {
     background-color: #0d1117 !important;
     border: 1px solid var(--border-color) !important;
     padding: 15px !important;
     border-radius: 8px !important;
-    color: #FFFFFF !important;
     transition: all 0.2s ease-in-out;
     box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
+/* The Text Inside the Button (FORCE WHITE) */
+[data-testid="stRadio"] label p {
+    color: #FFFFFF !important;
+    font-weight: 600 !important;
+}
+/* Hover State */
 [data-testid="stRadio"] label:hover {
     background-color: var(--bg-hover) !important;
     border-color: var(--primary-color) !important;
     cursor: pointer;
     transform: translateX(5px);
 }
-/* Active State */
+/* Active State (Orange Background) */
 [data-testid="stRadio"] label[data-baseweb="radio"] > div:first-child {
     background-color: var(--primary-color) !important; 
     border-color: var(--primary-color) !important;
-}
-[data-testid="stRadio"] label[data-baseweb="radio"] p {
-    color: #000000 !important;
-    font-weight: bold !important;
 }
 
 /* 5. USER PROFILE & CONTEXT CARDS */
@@ -129,28 +132,7 @@ button[kind="primary"]:hover {
     background-color: white !important;
 }
 
-/* 7. TAB STYLING */
-.stTabs [data-baseweb="tab-list"] {
-    gap: 10px;
-    background-color: transparent;
-    padding-bottom: 10px;
-    border-bottom: 1px solid #30363d;
-}
-.stTabs [data-baseweb="tab"] {
-    height: 40px;
-    border-radius: 5px;
-    background-color: transparent;
-    color: #B0B8C4 !important;
-    border: none;
-}
-.stTabs [data-baseweb="tab"][aria-selected="true"] {
-    background-color: #21262d;
-    color: var(--primary-color) !important;
-    border: 1px solid #30363d;
-    font-weight: bold;
-}
-
-/* 8. HIDE BRANDING */
+/* 7. HIDE BRANDING */
 #MainMenu {visibility: hidden;}
 footer {visibility: hidden;}
 header {visibility: hidden;}
@@ -280,18 +262,18 @@ if selected_nav == "📐 Planning & AI":
                             st.success("Saved & Synced to Algolia!")
                         else: st.error(msg)
 
-    # --- TAB 2: ANALYSIS & SCENARIOS (FIXED GANTT & LAYOUT) ---
+    # --- TAB 2: ANALYSIS & SCENARIOS ---
     with p_tab2:
         st.subheader("⚡ Risk Analysis & Scenarios")
         
         if 'boq_df' in st.session_state and not st.session_state['boq_df'].empty:
             
-            # 1. WHAT-IF SCENARIOS (FIXED LAYOUT)
+            # 1. WHAT-IF SCENARIOS
             c1, c2 = st.columns(2)
             with c1: 
                 steel_var = st.slider("📉 Steel Price Variance", -10, 20, 0, format="%d%%")
             with c2: 
-                # FIX: Added horizontal=True so it aligns better
+                # FIX: Added horizontal=True for better layout
                 concrete_grade = st.radio("🏗️ Concrete Grade", ["M20 (Standard)", "M25 (Heavy Duty)"], horizontal=True)
 
             if st.button("🔄 Recalculate Budget"):
@@ -448,8 +430,8 @@ elif selected_nav == "🛒 Marketplace":
                                  st.rerun()
                          elif bid['status'] == 'Accepted':
                              st.success("Accepted!")
-                             # FIX: Added a working generic Paystack URL so it doesn't crash
-                             st.link_button("💳 Pay Now", "https://paystack.com", help="Connect your actual Paystack payment page here.")
+                             # FIX: Paystack Homepage (Safe, no 404)
+                             st.link_button("💳 Pay Now", "https://paystack.com", help="Payment Gateway")
                          elif bid['status'] == 'Rejected':
                              st.error("Rejected")
 
