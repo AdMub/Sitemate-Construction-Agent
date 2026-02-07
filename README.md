@@ -77,6 +77,7 @@ Want to run this locally? Follow these steps:
 ```bash
 git clone [https://github.com/AdMub/Sitemate-Construction-Agent.git](https://github.com/AdMub/Sitemate-Construction-Agent.git)
 cd Sitemate-Construction-Agent
+```
 
 ## 2. Create a Virtual Environment
 
