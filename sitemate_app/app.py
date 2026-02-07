@@ -28,11 +28,19 @@ from logic.feasibility_engine import check_feasibility
 from logic.auth import require_auth, logout 
 
 # --- 3. CUSTOM STYLING ---
-# Try to load the external CSS file first
+import os
+
+# Get the absolute path of the current file (app.py)
+current_dir = os.path.dirname(os.path.abspath(__file__))
+# Construct the path to the CSS file
+css_path = os.path.join(current_dir, 'assets', 'style.css')
+
 try:
-    with open('assets/style.css') as f:
+    with open(css_path) as f:
         st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
 except FileNotFoundError:
+    # This will now clearly tell us if the file is missing instead of failing silently
+    st.error(f"⚠️ CSS File not found. Looked at: {css_path}")
     # Fallback if file is missing (Safety Net)
     st.markdown("""
     <style>
