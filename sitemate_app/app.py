@@ -50,8 +50,8 @@ CUSTOM_CSS = """
     border-right: 1px solid var(--border-color);
 }
 
-/* 3. NAVIGATION BUTTONS (UNIVERSAL SELECTOR) */
-/* We target the Radio Button container generically */
+/* 3. NAVIGATION BUTTONS (UNIVERSAL SELECTOR - CLOUD FIX) */
+/* We target the Radio Button container generically using data-testid */
 [data-testid="stRadio"] > div {
     gap: 12px;
 }
@@ -117,6 +117,27 @@ button[kind="primary"]:hover {
 #MainMenu {visibility: hidden;}
 footer {visibility: hidden;}
 header {visibility: hidden;}
+
+/* 7. TAB STYLING (KEPT FROM PREVIOUS CODE) */
+.stTabs [data-baseweb="tab-list"] {
+    gap: 10px;
+    background-color: transparent;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #30363d;
+}
+.stTabs [data-baseweb="tab"] {
+    height: 40px;
+    border-radius: 5px;
+    background-color: transparent;
+    color: #8b949e;
+    border: none;
+}
+.stTabs [data-baseweb="tab"][aria-selected="true"] {
+    background-color: #21262d;
+    color: var(--primary-color);
+    border: 1px solid #30363d;
+    font-weight: bold;
+}
 """
 st.markdown(f'<style>{CUSTOM_CSS}</style>', unsafe_allow_html=True)
 
