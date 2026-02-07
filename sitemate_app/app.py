@@ -42,7 +42,7 @@ from logic.expert_verifier import verify_project_budget
 from logic.feasibility_engine import check_feasibility 
 from logic.auth import require_auth, logout 
 
-# --- 3. CUSTOM STYLING (FINAL VISIBILITY FIX) ---
+# --- 3. CUSTOM STYLING (THE DEFINITIVE FIX) ---
 CUSTOM_CSS = """
 /* --- GLOBAL THEME --- */
 :root {
@@ -53,20 +53,22 @@ CUSTOM_CSS = """
     --text-white: #FFFFFF;
 }
 
-/* 1. FORCE BACKGROUNDS & TEXT */
+/* 1. FORCE BACKGROUNDS & GLOBAL TEXT */
 .stApp { background-color: var(--bg-dark); }
 [data-testid="stSidebar"] { background-color: var(--bg-card); border-right: 1px solid #30363D; }
 h1, h2, h3, h4, h5, h6, p, label, div, span { color: var(--text-white); }
 
-/* 2. SIDEBAR NAVIGATION CARDS */
-/* Target the Radio Button Container */
+/* ============================================================
+   2. SIDEBAR NAVIGATION CARDS (THE FIX FOR BLACK TEXT)
+============================================================ */
+/* Target the Radio Button Container gap */
 [data-testid="stSidebar"] [data-testid="stRadio"] > div { 
     gap: 10px; 
 }
 
-/* THE BUTTON ITSELF */
+/* --- STEP 1: The Button Card Styling --- */
 [data-testid="stSidebar"] [data-testid="stRadio"] label {
-    background-color: #262730 !important;
+    background-color: #262730 !important; /* Dark charcoal background */
     border: 1px solid #4a4a4a !important;
     padding: 10px 15px !important;
     border-radius: 8px !important;
@@ -74,39 +76,40 @@ h1, h2, h3, h4, h5, h6, p, label, div, span { color: var(--text-white); }
     transition: all 0.2s;
 }
 
-/* --- THE FIX: FORCE TEXT WHITE --- */
-/* This specific rule targets the text inside the button */
-[data-testid="stSidebar"] [data-testid="stRadio"] label p {
-    color: #FFFFFF !important; /* Force Bright White */
-    font-size: 16px !important;
-    font-weight: 500 !important;
-}
-[data-testid="stSidebar"] [data-testid="stRadio"] label div {
-    color: #FFFFFF !important;
+/* --- STEP 2: THE "NUCLEAR" FIX FOR UNSELECTED TEXT --- */
+/* Use the asterisk (*) to force absolutely EVERYTHING inside the unselected label to be WHITE */
+[data-testid="stSidebar"] [data-testid="stRadio"] label > div * {
+     color: #FFFFFF !important; 
+     font-weight: 500 !important;
 }
 
-/* HOVER STATE */
+/* --- STEP 3: Hover State --- */
 [data-testid="stSidebar"] [data-testid="stRadio"] label:hover {
     border-color: #FF8C00 !important;
     background-color: #1F242C !important;
     cursor: pointer;
 }
-[data-testid="stSidebar"] [data-testid="stRadio"] label:hover p {
-    color: #FF8C00 !important; /* Text turns Orange on Hover */
+/* Force text to turn ORANGE on hover */
+[data-testid="stSidebar"] [data-testid="stRadio"] label:hover > div * {
+    color: #FF8C00 !important;
 }
 
-/* SELECTED STATE (Active Tab) */
+/* --- STEP 4: Selected State (Active Tab) --- */
+/* Make the background ORANGE */
 [data-testid="stSidebar"] [data-testid="stRadio"] label[data-baseweb="radio"] > div:first-child {
     background-color: #FF8C00 !important;
     border-color: #FF8C00 !important;
 }
-/* Selected Text (Black on Orange) */
-[data-testid="stSidebar"] [data-testid="stRadio"] label[data-baseweb="radio"] p {
+/* Make the text BLACK (to contrast with orange background) */
+/* This MUST override the white rule above */
+[data-testid="stSidebar"] [data-testid="stRadio"] label[data-baseweb="radio"] > div * {
     color: #000000 !important;
     font-weight: 800 !important;
 }
+/* ============================================================ */
 
-/* 3. MAIN PAGE RADIO BUTTONS (Reset) */
+
+/* 3. MAIN PAGE RADIO BUTTONS (Reset to normal) */
 .stMain [data-testid="stRadio"] label {
     background-color: transparent !important;
     border: none !important;
