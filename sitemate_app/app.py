@@ -356,16 +356,10 @@ elif selected_nav == "🛒 Marketplace":
                             # WhatsApp Link
                             st.link_button("📲 Chat", get_whatsapp_link(sup.get('phone', '000'), "Hello, I have a project..."))
                         with c3:
-                            # Email Link (FIXED VISIBILITY)
+                            # Email Link - Using Native Streamlit Component
                             email_link = get_email_link(sup.get('email', 'test@test.com'), selected_loc, "Order Inquiry")
                             if email_link: 
-                                st.markdown(f"""
-                                <a href="{email_link}" target="_blank" style="text-decoration:none;">
-                                    <button style="width:100%; padding: 0.5rem; background-color: #1F242C; color: white; border: 1px solid #30363d; border-radius: 6px; font-weight: bold; cursor: pointer;">
-                                        📧 Send Email
-                                    </button>
-                                </a>
-                                """, unsafe_allow_html=True)
+                                st.link_button("📧 Send Email", email_link, use_container_width=True)
         else:
             st.info("Create a BOQ in the Planning tab to see supplier estimates.")
 
