@@ -42,7 +42,7 @@ from logic.expert_verifier import verify_project_budget
 from logic.feasibility_engine import check_feasibility 
 from logic.auth import require_auth, logout 
 
-# --- 3. CUSTOM STYLING (FINAL VISUAL FIX) ---
+# --- 3. CUSTOM STYLING (FINAL VISIBILITY FIX) ---
 CUSTOM_CSS = """
 /* --- GLOBAL THEME --- */
 :root {
@@ -56,61 +56,76 @@ CUSTOM_CSS = """
 /* 1. FORCE BACKGROUNDS & TEXT */
 .stApp { background-color: var(--bg-dark); }
 [data-testid="stSidebar"] { background-color: var(--bg-card); border-right: 1px solid #30363D; }
-h1, h2, h3, h4, h5, h6, p, label, div { color: var(--text-white); }
+h1, h2, h3, h4, h5, h6, p, label, div, span { color: var(--text-white); }
 
-/* 2. SIDEBAR NAVIGATION CARDS (The Fix for "Black Blocks") */
-/* We make the sidebar buttons a lighter charcoal so they pop */
+/* 2. SIDEBAR NAVIGATION CARDS */
+/* Target the Radio Button Container */
+[data-testid="stSidebar"] [data-testid="stRadio"] > div { 
+    gap: 10px; 
+}
+
+/* THE BUTTON ITSELF */
 [data-testid="stSidebar"] [data-testid="stRadio"] label {
-    background-color: #262730 !important; /* Visible Charcoal */
-    color: #FFFFFF !important;
+    background-color: #262730 !important;
     border: 1px solid #4a4a4a !important;
     padding: 10px 15px !important;
     border-radius: 8px !important;
     margin-bottom: 5px !important;
     transition: all 0.2s;
 }
-/* Sidebar Hover */
+
+/* --- THE FIX: FORCE TEXT WHITE --- */
+/* This specific rule targets the text inside the button */
+[data-testid="stSidebar"] [data-testid="stRadio"] label p {
+    color: #FFFFFF !important; /* Force Bright White */
+    font-size: 16px !important;
+    font-weight: 500 !important;
+}
+[data-testid="stSidebar"] [data-testid="stRadio"] label div {
+    color: #FFFFFF !important;
+}
+
+/* HOVER STATE */
 [data-testid="stSidebar"] [data-testid="stRadio"] label:hover {
     border-color: #FF8C00 !important;
     background-color: #1F242C !important;
     cursor: pointer;
 }
-/* Sidebar Selected (Orange) */
+[data-testid="stSidebar"] [data-testid="stRadio"] label:hover p {
+    color: #FF8C00 !important; /* Text turns Orange on Hover */
+}
+
+/* SELECTED STATE (Active Tab) */
 [data-testid="stSidebar"] [data-testid="stRadio"] label[data-baseweb="radio"] > div:first-child {
     background-color: #FF8C00 !important;
     border-color: #FF8C00 !important;
 }
-/* Sidebar Selected Text */
+/* Selected Text (Black on Orange) */
 [data-testid="stSidebar"] [data-testid="stRadio"] label[data-baseweb="radio"] p {
     color: #000000 !important;
     font-weight: 800 !important;
 }
 
-/* 3. MAIN PAGE RADIO BUTTONS (The Fix for "Invisible Options") */
-/* Reset main page radios to be transparent and normal */
+/* 3. MAIN PAGE RADIO BUTTONS (Reset) */
 .stMain [data-testid="stRadio"] label {
     background-color: transparent !important;
     border: none !important;
     color: white !important;
-    padding: 0px !important;
 }
 
-/* 4. FIX WHITE BOXES (Inputs & Selectboxes) */
-/* Force dark background on all inputs */
+/* 4. FIX WHITE BOXES (Inputs) */
 .stTextInput input, .stNumberInput input, .stTextArea textarea, .stSelectbox div[data-baseweb="select"] > div {
     background-color: #262730 !important;
     color: white !important;
     border-color: #4a4a4a !important;
 }
-/* Placeholder text visibility */
 ::placeholder { color: #B0B8C4 !important; }
-/* Dropdown menu background */
 div[data-baseweb="popover"], div[data-baseweb="menu"], ul {
     background-color: #262730 !important;
     color: white !important;
 }
 
-/* 5. USER CARD & GREEN DOT FIX */
+/* 5. USER CARD & GREEN DOT */
 .user-card {
     background: linear-gradient(135deg, #1f2937, #111827);
     border: 1px solid #374151;
@@ -120,7 +135,7 @@ div[data-baseweb="popover"], div[data-baseweb="menu"], ul {
     margin-bottom: 20px;
 }
 .status-dot {
-    color: #4ade80 !important; /* Force Green */
+    color: #4ade80 !important;
     font-size: 1.2em;
     margin-right: 5px;
 }
