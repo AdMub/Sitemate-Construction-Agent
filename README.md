@@ -2,12 +2,14 @@
 
 > **"From Blueprint to Bank Alert – The Operating System for Modern African Construction."**
 
-[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://sitemate-construction.streamlit.app/)
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://sitemate-construction-agent-r9kobvwbkzdomykfe9cmgy.streamlit.app) 
 ![Python Version](https://img.shields.io/badge/python-3.9%2B-blue)
 ![Competition](https://img.shields.io/badge/Built%20For-Algolia%20Agent%20Studio%20Challenge-orange)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
 ## 📖 Overview
+**[🔴 LIVE DEMO: Click here to try SiteMate Pro](https://sitemate-construction-agent-r9kobvwbkzdomykfe9cmgy.streamlit.app)**
+
 **SiteMate Pro** is an AI-powered "Enterprise Operating System" designed to solve the fragmentation, opacity, and inefficiency in the Nigerian construction industry. It unifies project planning, procurement, site operations, and financial reporting into a single, cohesive platform.
 
 Built specifically for the **Algolia Agent Studio Challenge**, SiteMate Pro leverages **Algolia's** powerful search and sync capabilities to connect engineers with real-time material prices and suppliers instantly.
