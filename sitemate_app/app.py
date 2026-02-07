@@ -5,7 +5,6 @@ import time
 import os
 
 # --- 0. THEME AUTO-FIX (FORCES DARK MODE) ---
-# This ensures the app ALWAYS loads in Dark Mode on the Cloud.
 if not os.path.exists(".streamlit/config.toml"):
     os.makedirs(".streamlit", exist_ok=True)
     with open(".streamlit/config.toml", "w") as f:
@@ -43,7 +42,7 @@ from logic.expert_verifier import verify_project_budget
 from logic.feasibility_engine import check_feasibility 
 from logic.auth import require_auth, logout 
 
-# --- 3. CUSTOM STYLING (THE AGGRESSIVE FIX) ---
+# --- 3. CUSTOM STYLING (SMART SCOPING) ---
 CUSTOM_CSS = """
 /* --- GLOBAL THEME --- */
 :root {
@@ -53,63 +52,70 @@ CUSTOM_CSS = """
     --text-white: #FFFFFF;
 }
 
-/* 1. FORCE BACKGROUNDS */
+/* 1. FORCE BACKGROUNDS & TEXT */
 .stApp { background-color: var(--bg-dark); }
 [data-testid="stSidebar"] { background-color: var(--bg-card); border-right: 1px solid #30363D; }
-
-/* 2. FORCE TEXT COLORS (Global White) */
 h1, h2, h3, h4, h5, h6, p, label, span, div { color: var(--text-white) !important; }
 
-/* 3. SIDEBAR NAVIGATION BUTTONS (Aggressive Override) */
-[data-testid="stRadio"] > div { gap: 10px; }
-[data-testid="stRadio"] label {
-    background-color: #0d1117 !important;
-    color: #FFFFFF !important; /* Force White Text */
+/* 2. SIDEBAR NAVIGATION ONLY (The "Card" Look) */
+/* We specifically target radio buttons INSIDE the sidebar */
+[data-testid="stSidebar"] [data-testid="stRadio"] > div { gap: 10px; }
+
+[data-testid="stSidebar"] [data-testid="stRadio"] label {
+    background-color: #21262D !important; /* Lighter Grey - Visible against black */
+    color: #FFFFFF !important;
     border: 1px solid #30363D !important;
     padding: 12px !important;
     border-radius: 8px !important;
+    transition: all 0.2s;
 }
-/* Hover State */
-[data-testid="stRadio"] label:hover {
+/* Sidebar Hover */
+[data-testid="stSidebar"] [data-testid="stRadio"] label:hover {
     border-color: #FF8C00 !important;
+    background-color: #1F242C !important;
     cursor: pointer;
 }
-/* Selected State */
-[data-testid="stRadio"] label[data-baseweb="radio"] > div:first-child {
+/* Sidebar Selected */
+[data-testid="stSidebar"] [data-testid="stRadio"] label[data-baseweb="radio"] > div:first-child {
     background-color: #FF8C00 !important;
     border-color: #FF8C00 !important;
 }
-/* Selected Text Color (Black for contrast on Orange) */
-[data-testid="stRadio"] label[data-baseweb="radio"] p {
+/* Sidebar Selected Text */
+[data-testid="stSidebar"] [data-testid="stRadio"] label[data-baseweb="radio"] p {
     color: #000000 !important;
     font-weight: 800 !important;
 }
 
-/* 4. FIX WHITE BOXES (Selectbox & Inputs) */
-/* This targets the internal React component to force dark mode */
+/* 3. MAIN PAGE RADIO BUTTONS (The "Normal" Look) */
+/* Reset styles for radio buttons outside the sidebar so they aren't blocks */
+.stMain [data-testid="stRadio"] label {
+    background-color: transparent !important;
+    border: none !important;
+    color: white !important;
+    padding: 0px !important;
+}
+.stMain [data-testid="stRadio"] label:hover {
+    background-color: transparent !important;
+}
+
+/* 4. FIX WHITE BOXES (Inputs & Selectboxes) */
+/* Force dark background on input fields */
 div[data-baseweb="select"] > div, 
-div[data-baseweb="input"] > div {
+div[data-baseweb="input"] > div,
+.stTextInput input, 
+.stNumberInput input {
     background-color: #1F242C !important;
     color: white !important;
     border-color: #30363D !important;
 }
-/* Fix the dropdown popover menu */
+/* Placeholder Text */
+::placeholder { color: #B0B8C4 !important; }
+/* Dropdown Menu Background */
 div[data-baseweb="popover"], div[data-baseweb="menu"] {
     background-color: #161B22 !important;
 }
-/* Ensure text inside selectbox is white */
-div[data-baseweb="select"] span {
-    color: white !important;
-}
-/* Ensure placeholder text is visible */
-input::placeholder {
-    color: #B0B8C4 !important;
-}
-input {
-    color: white !important;
-}
 
-/* 5. USER CARD & WIDGETS */
+/* 5. USER CARD */
 .user-card {
     background: linear-gradient(135deg, #1f2937, #111827);
     border: 1px solid #374151;
