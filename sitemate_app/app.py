@@ -42,31 +42,31 @@ from logic.expert_verifier import verify_project_budget
 from logic.feasibility_engine import check_feasibility 
 from logic.auth import require_auth, logout 
 
-# --- 3. CUSTOM STYLING (SMART SCOPING) ---
+# --- 3. CUSTOM STYLING (FINAL VISUAL FIX) ---
 CUSTOM_CSS = """
 /* --- GLOBAL THEME --- */
 :root {
     --primary-color: #FF8C00; 
     --bg-dark: #0E1117; 
     --bg-card: #161B22; 
+    --bg-input: #262730;
     --text-white: #FFFFFF;
 }
 
 /* 1. FORCE BACKGROUNDS & TEXT */
 .stApp { background-color: var(--bg-dark); }
 [data-testid="stSidebar"] { background-color: var(--bg-card); border-right: 1px solid #30363D; }
-h1, h2, h3, h4, h5, h6, p, label, span, div { color: var(--text-white) !important; }
+h1, h2, h3, h4, h5, h6, p, label, div { color: var(--text-white); }
 
-/* 2. SIDEBAR NAVIGATION ONLY (The "Card" Look) */
-/* We specifically target radio buttons INSIDE the sidebar */
-[data-testid="stSidebar"] [data-testid="stRadio"] > div { gap: 10px; }
-
+/* 2. SIDEBAR NAVIGATION CARDS (The Fix for "Black Blocks") */
+/* We make the sidebar buttons a lighter charcoal so they pop */
 [data-testid="stSidebar"] [data-testid="stRadio"] label {
-    background-color: #21262D !important; /* Lighter Grey - Visible against black */
+    background-color: #262730 !important; /* Visible Charcoal */
     color: #FFFFFF !important;
-    border: 1px solid #30363D !important;
-    padding: 12px !important;
+    border: 1px solid #4a4a4a !important;
+    padding: 10px 15px !important;
     border-radius: 8px !important;
+    margin-bottom: 5px !important;
     transition: all 0.2s;
 }
 /* Sidebar Hover */
@@ -75,7 +75,7 @@ h1, h2, h3, h4, h5, h6, p, label, span, div { color: var(--text-white) !importan
     background-color: #1F242C !important;
     cursor: pointer;
 }
-/* Sidebar Selected */
+/* Sidebar Selected (Orange) */
 [data-testid="stSidebar"] [data-testid="stRadio"] label[data-baseweb="radio"] > div:first-child {
     background-color: #FF8C00 !important;
     border-color: #FF8C00 !important;
@@ -86,36 +86,31 @@ h1, h2, h3, h4, h5, h6, p, label, span, div { color: var(--text-white) !importan
     font-weight: 800 !important;
 }
 
-/* 3. MAIN PAGE RADIO BUTTONS (The "Normal" Look) */
-/* Reset styles for radio buttons outside the sidebar so they aren't blocks */
+/* 3. MAIN PAGE RADIO BUTTONS (The Fix for "Invisible Options") */
+/* Reset main page radios to be transparent and normal */
 .stMain [data-testid="stRadio"] label {
     background-color: transparent !important;
     border: none !important;
     color: white !important;
     padding: 0px !important;
 }
-.stMain [data-testid="stRadio"] label:hover {
-    background-color: transparent !important;
-}
 
 /* 4. FIX WHITE BOXES (Inputs & Selectboxes) */
-/* Force dark background on input fields */
-div[data-baseweb="select"] > div, 
-div[data-baseweb="input"] > div,
-.stTextInput input, 
-.stNumberInput input {
-    background-color: #1F242C !important;
+/* Force dark background on all inputs */
+.stTextInput input, .stNumberInput input, .stTextArea textarea, .stSelectbox div[data-baseweb="select"] > div {
+    background-color: #262730 !important;
     color: white !important;
-    border-color: #30363D !important;
+    border-color: #4a4a4a !important;
 }
-/* Placeholder Text */
+/* Placeholder text visibility */
 ::placeholder { color: #B0B8C4 !important; }
-/* Dropdown Menu Background */
-div[data-baseweb="popover"], div[data-baseweb="menu"] {
-    background-color: #161B22 !important;
+/* Dropdown menu background */
+div[data-baseweb="popover"], div[data-baseweb="menu"], ul {
+    background-color: #262730 !important;
+    color: white !important;
 }
 
-/* 5. USER CARD */
+/* 5. USER CARD & GREEN DOT FIX */
 .user-card {
     background: linear-gradient(135deg, #1f2937, #111827);
     border: 1px solid #374151;
@@ -123,6 +118,11 @@ div[data-baseweb="popover"], div[data-baseweb="menu"] {
     border-radius: 10px;
     padding: 15px;
     margin-bottom: 20px;
+}
+.status-dot {
+    color: #4ade80 !important; /* Force Green */
+    font-size: 1.2em;
+    margin-right: 5px;
 }
 .context-card {
     background-color: #21262d;
@@ -142,9 +142,9 @@ button[kind="primary"] {
     font-weight: bold;
 }
 button[kind="secondary"] {
-    background-color: #21262D !important;
+    background-color: #262730 !important;
     color: white !important;
-    border: 1px solid #30363D !important;
+    border: 1px solid #4a4a4a !important;
 }
 
 /* 7. HIDE BRANDING */
@@ -163,13 +163,13 @@ with st.sidebar:
     st.markdown("### **SiteMate Pro**")
     st.caption("Enterprise OS | v1.0")
     
-    # --- USER CARD ---
+    # --- USER CARD (FIXED GREEN DOT) ---
     st.markdown(f"""
     <div class="user-card">
         <small style="color: #9ca3af;">Logged in as:</small><br>
         <strong style="font-size: 1.1em;">{st.session_state['user_name']}</strong><br>
-        <div style="margin-top: 5px;">
-            <span style='color: #4ade80; font-size: 0.8em;'>● Online</span>
+        <div style="margin-top: 5px; display: flex; align-items: center;">
+            <span class="status-dot">●</span> <span style="font-size: 0.9em;">Online</span>
         </div>
     </div>
     """, unsafe_allow_html=True)
