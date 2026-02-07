@@ -45,7 +45,7 @@ Built specifically for the **Algolia Agent Studio Challenge**, SiteMate Pro leve
 
 ---
 
-## 🛠️ Tech Stack
+### 🛠️ Tech Stack
 
 | Component | Technology |
 | :--- | :--- |
@@ -58,7 +58,7 @@ Built specifically for the **Algolia Agent Studio Challenge**, SiteMate Pro leve
 
 ---
 
-## 📸 Screenshots
+### 📸 Screenshots
 
 | **Command Center** | **Procurement Marketplace** |
 |:---:|:---:|
@@ -79,19 +79,19 @@ git clone [https://github.com/AdMub/Sitemate-Construction-Agent.git](https://git
 cd Sitemate-Construction-Agent
 ```
 
-## 2. Create a Virtual Environment
+### 2. Create a Virtual Environment
 
 ```bash
 python -m venv venv
 source venv/bin/activate   # On Windows: venv\Scripts\activate
 ```
 
-**3. Install Dependencies**
+### **3. Install Dependencies**
 ```bash
 pip install -r sitemate_app/requirements.txt
 ```
 
-**4. Set Up Environment Variables Create a .env file in the root directory and add your API keys:**
+### **4. Set Up Environment Variables Create a .env file in the root directory and add your API keys:**
 ```Ini, TOML
 GOOGLE_API_KEY = "your_google_key"
 ALGOLIA_APP_ID = "your_algolia_id"
@@ -99,12 +99,12 @@ ALGOLIA_API_KEY = "your_algolia_key"
 GROQ_API_KEY = "your_groq_key"
 ```
 
-**5. Run the App**
+### **5. Run the App**
 ```bash
 streamlit run sitemate_app/app.py
 ```
 
-## **👨‍💻 Author**
+### **👨‍💻 Author**
 **Mubarak Adisa**
   
 - 🎓 Civil Engineering + Computer Science (Data Science & AI Focus)  
