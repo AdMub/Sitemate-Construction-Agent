@@ -42,7 +42,7 @@ from logic.expert_verifier import verify_project_budget
 from logic.feasibility_engine import check_feasibility 
 from logic.auth import require_auth, logout 
 
-# --- 3. CUSTOM STYLING (THE DEFINITIVE FIX) ---
+# --- 3. CUSTOM STYLING (THE FINAL NUCLEAR FIX) ---
 CUSTOM_CSS = """
 /* --- GLOBAL THEME --- */
 :root {
@@ -59,16 +59,16 @@ CUSTOM_CSS = """
 h1, h2, h3, h4, h5, h6, p, label, div, span { color: var(--text-white); }
 
 /* ============================================================
-   2. SIDEBAR NAVIGATION CARDS (THE FIX FOR BLACK TEXT)
+   2. SIDEBAR NAVIGATION - THE FINAL FIX FOR BLACK TEXT
 ============================================================ */
-/* Target the Radio Button Container gap */
+/* Target the container gap */
 [data-testid="stSidebar"] [data-testid="stRadio"] > div { 
     gap: 10px; 
 }
 
-/* --- STEP 1: The Button Card Styling --- */
+/* THE CARD BOX STYLE */
 [data-testid="stSidebar"] [data-testid="stRadio"] label {
-    background-color: #262730 !important; /* Dark charcoal background */
+    background-color: #262730 !important; /* Dark Charcoal */
     border: 1px solid #4a4a4a !important;
     padding: 10px 15px !important;
     border-radius: 8px !important;
@@ -76,35 +76,34 @@ h1, h2, h3, h4, h5, h6, p, label, div, span { color: var(--text-white); }
     transition: all 0.2s;
 }
 
-/* --- STEP 2: THE "NUCLEAR" FIX FOR UNSELECTED TEXT --- */
-/* Use the asterisk (*) to force absolutely EVERYTHING inside the unselected label to be WHITE */
-[data-testid="stSidebar"] [data-testid="stRadio"] label > div * {
+/* --- THE NUCLEAR RULE: FORCE ALL TEXT WHITE --- */
+/* This targets absolutely every element inside a sidebar radio label and forces it white */
+[data-testid="stSidebar"] [data-testid="stRadio"] label * {
      color: #FFFFFF !important; 
      font-weight: 500 !important;
 }
 
-/* --- STEP 3: Hover State --- */
+/* --- OVERRIDE FOR SELECTED STATE (Orange Background, Black Text) --- */
+/* The selected item gets an orange background */
+[data-testid="stSidebar"] [data-testid="stRadio"] label[aria-checked="true"] {
+    background-color: #FF8C00 !important;
+    border-color: #FF8C00 !important;
+}
+/* The selected item text must be BLACK (overriding the white rule above) */
+[data-testid="stSidebar"] [data-testid="stRadio"] label[aria-checked="true"] * {
+    color: #000000 !important;
+    font-weight: 900 !important;
+}
+
+/* --- HOVER STATE --- */
 [data-testid="stSidebar"] [data-testid="stRadio"] label:hover {
     border-color: #FF8C00 !important;
     background-color: #1F242C !important;
     cursor: pointer;
 }
-/* Force text to turn ORANGE on hover */
-[data-testid="stSidebar"] [data-testid="stRadio"] label:hover > div * {
+/* On hover, text turns orange */
+[data-testid="stSidebar"] [data-testid="stRadio"] label:hover * {
     color: #FF8C00 !important;
-}
-
-/* --- STEP 4: Selected State (Active Tab) --- */
-/* Make the background ORANGE */
-[data-testid="stSidebar"] [data-testid="stRadio"] label[data-baseweb="radio"] > div:first-child {
-    background-color: #FF8C00 !important;
-    border-color: #FF8C00 !important;
-}
-/* Make the text BLACK (to contrast with orange background) */
-/* This MUST override the white rule above */
-[data-testid="stSidebar"] [data-testid="stRadio"] label[data-baseweb="radio"] > div * {
-    color: #000000 !important;
-    font-weight: 800 !important;
 }
 /* ============================================================ */
 
@@ -114,6 +113,7 @@ h1, h2, h3, h4, h5, h6, p, label, div, span { color: var(--text-white); }
     background-color: transparent !important;
     border: none !important;
     color: white !important;
+    padding: 0px !important;
 }
 
 /* 4. FIX WHITE BOXES (Inputs) */
@@ -181,7 +181,7 @@ with st.sidebar:
     st.markdown("### **SiteMate Pro**")
     st.caption("Enterprise OS | v1.0")
     
-    # --- USER CARD (FIXED GREEN DOT) ---
+    # --- USER CARD ---
     st.markdown(f"""
     <div class="user-card">
         <small style="color: #9ca3af;">Logged in as:</small><br>
