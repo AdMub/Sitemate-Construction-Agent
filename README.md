@@ -18,7 +18,7 @@ Built specifically for the **Algolia Agent Studio Challenge**, SiteMate Pro leve
 
 ## 🎥 Demo Walkthrough
 
-[![Watch the Video](https://img.youtube.com/vi/PLACEHOLDER_VIDEO_ID/maxresdefault.jpg)](https://www.youtube.com/watch?v=rAIdP9A5qAYO_ID)
+[![Watch the Video](https://img.youtube.com/vi/rAIdP9A5qAY/hqdefault.jpg)](https://www.youtube.com/watch?v=rAIdP9A5qAY)
 
 *(Click the image above to watch the project demo)*
 
